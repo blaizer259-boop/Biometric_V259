@@ -1,5 +1,6 @@
 node_modules/
-.vscode/
-.mcp
-*.env
+dist/
+.env
 .env.local
+.mcp
+.vscode/

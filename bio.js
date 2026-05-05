@@ -24,6 +24,14 @@
     let votesCount = {}; // candidate_id -> count
     let verifiedVoterId = null; // Storing the db id (UUID)
     let selectedCandidates = {}; // position -> candidate_id
+    let faceModelsLoaded = false;
+    const FACE_MODELS_URL = '/models';
+    const FACE_MATCH_THRESHOLD = 0.6;
+    const DUPLICATE_FACE_THRESHOLD = 0.55;
+    const FACE_SAMPLE_COUNT = 3;
+    const FACE_SAMPLE_DELAY_MS = 220;
+    const MIN_FACE_HEIGHT_RATIO = 0.22;
+    const MAX_FACE_HEIGHT_RATIO = 0.48;
 
     // ---------- DOM Elements ----------
     const navLinks = document.querySelectorAll('.nav-link');
@@ -114,6 +122,148 @@
         setTimeout(() => {
             if (element.textContent === text) element.textContent = '';
         }, 5000);
+    }
+
+    async function ensureFaceModelsLoaded() {
+        if (faceModelsLoaded) return;
+        if (!window.faceapi) {
+            throw new Error('Face recognition library failed to load. Check your internet connection.');
+        }
+
+        await Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODELS_URL),
+            faceapi.nets.faceLandmark68Net.loadFromUri(FACE_MODELS_URL),
+            faceapi.nets.faceRecognitionNet.loadFromUri(FACE_MODELS_URL)
+        ]);
+
+        faceModelsLoaded = true;
+    }
+
+    async function detectCurrentFace(videoElement) {
+        await ensureFaceModelsLoaded();
+
+        if (!videoElement || videoElement.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+            throw new Error('Camera is not ready yet. Wait a moment and try again.');
+        }
+
+        const detection = await faceapi
+            .detectSingleFace(videoElement, new faceapi.TinyFaceDetectorOptions())
+            .withFaceLandmarks()
+            .withFaceDescriptor();
+
+        if (!detection) {
+            throw new Error('No face detected. Face the camera and try again.');
+        }
+
+        validateFaceFraming(videoElement, detection);
+        return detection;
+    }
+
+    async function captureStableDescriptor(videoElement, cameraHandler) {
+        if (cameraHandler) cameraHandler.setScanning(true);
+
+        try {
+            const descriptors = [];
+
+            for (let index = 0; index < FACE_SAMPLE_COUNT; index += 1) {
+                const detection = await detectCurrentFace(videoElement);
+                descriptors.push(detection.descriptor);
+
+                if (index < FACE_SAMPLE_COUNT - 1) {
+                    await delay(FACE_SAMPLE_DELAY_MS);
+                }
+            }
+
+            return descriptorToJson(averageDescriptors(descriptors));
+        } finally {
+            if (cameraHandler) cameraHandler.setScanning(false);
+        }
+    }
+
+    function validateFaceFraming(videoElement, detection) {
+        const frameHeight = videoElement.videoHeight || videoElement.clientHeight;
+        const faceHeightRatio = detection.detection.box.height / frameHeight;
+
+        if (faceHeightRatio < MIN_FACE_HEIGHT_RATIO) {
+            throw new Error('Move closer and keep your face centered. Around 50cm from the camera works best.');
+        }
+
+        if (faceHeightRatio > MAX_FACE_HEIGHT_RATIO) {
+            throw new Error('Move back a little. Keep about 50cm between your face and the camera.');
+        }
+    }
+
+    function averageDescriptors(descriptors) {
+        const averaged = new Float32Array(128);
+
+        descriptors.forEach(descriptor => {
+            descriptor.forEach((value, index) => {
+                averaged[index] += value / descriptors.length;
+            });
+        });
+
+        return averaged;
+    }
+
+    function descriptorToJson(descriptor) {
+        const values = Array.from(descriptor, Number);
+
+        if (values.length !== 128 || values.some(value => !Number.isFinite(value))) {
+            throw new Error('Invalid face descriptor. Please try scanning again.');
+        }
+
+        return values;
+    }
+
+    function parseStoredDescriptor(voter) {
+        const stored = voter.face_descriptor || voter.face_hash;
+
+        if (!stored) return null;
+
+        try {
+            const values = typeof stored === 'string' ? JSON.parse(stored) : stored;
+
+            if (!Array.isArray(values) || values.length !== 128) return null;
+
+            const descriptor = new Float32Array(values.map(Number));
+
+            if (Array.from(descriptor).some(value => !Number.isFinite(value))) return null;
+
+            return descriptor;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function findDuplicateFace(faceDescriptor, excludedRegNumber = '') {
+        const queryDescriptor = new Float32Array(faceDescriptor);
+        let closestMatch = null;
+
+        voters.forEach(voter => {
+            if (excludedRegNumber && voter.reg_number === excludedRegNumber) return;
+
+            const storedDescriptor = parseStoredDescriptor(voter);
+            if (!storedDescriptor) return;
+
+            const distance = faceapi.euclideanDistance(queryDescriptor, storedDescriptor);
+
+            if (!closestMatch || distance < closestMatch.distance) {
+                closestMatch = {
+                    voter,
+                    distance
+                };
+            }
+        });
+
+        if (closestMatch && closestMatch.distance < DUPLICATE_FACE_THRESHOLD) {
+            return closestMatch;
+        }
+
+        return null;
+    }
+
+    function delay(milliseconds) {
+        return new Promise(resolve => setTimeout(resolve, milliseconds));
     }
 
     // ---------- Supabase Integration ----------
@@ -238,6 +388,7 @@
 
         async start() {
             try {
+                await ensureFaceModelsLoaded();
                 if (this.stream) {
                     this.stream.getTracks().forEach(track => track.stop());
                 }
@@ -263,12 +414,11 @@
         }
 
         async scan() {
-            this.overlay.classList.add('active');
-            // Simulate 2 seconds of scanning
-            return new Promise(resolve => setTimeout(() => {
-                this.overlay.classList.remove('active');
-                resolve();
-            }, 2000));
+            return captureStableDescriptor(this.videoElement, this);
+        }
+
+        setScanning(isScanning) {
+            this.overlay.classList.toggle('active', isScanning);
         }
     }
 
@@ -314,27 +464,52 @@
         captureRegisterBtn.disabled = true;
         captureRegisterBtn.textContent = 'Scanning Face...';
 
-        await regCamera.scan();
+        let faceDescriptor;
+        let faceHash;
 
-        registerCanvas.width = registerVideo.videoWidth;
-        registerCanvas.height = registerVideo.videoHeight;
-        const ctx = registerCanvas.getContext('2d');
-        ctx.drawImage(registerVideo, 0, 0, registerCanvas.width, registerCanvas.height);
-        const faceHash = registerCanvas.toDataURL('image/jpeg', 0.5).slice(0, 50) + Date.now();
+        try {
+            faceDescriptor = await regCamera.scan();
+            const duplicateFace = findDuplicateFace(faceDescriptor, studentId);
+
+            if (duplicateFace) {
+                showMessage(
+                    registerMessage,
+                    `This face is already registered as ${duplicateFace.voter.name} (${duplicateFace.voter.reg_number}). Match score: ${duplicateFace.distance.toFixed(3)}.`,
+                    true
+                );
+                captureRegisterBtn.disabled = false;
+                captureRegisterBtn.textContent = 'Register';
+                return;
+            }
+
+            faceHash = JSON.stringify(faceDescriptor);
+        } catch (err) {
+            console.error('Face capture error:', err);
+            showMessage(registerMessage, err.message || 'Face capture failed. Try again.', true);
+            captureRegisterBtn.disabled = false;
+            captureRegisterBtn.textContent = 'Register';
+            return;
+        }
 
         captureRegisterBtn.textContent = 'Saving to Database...';
 
         try {
-            const { data, error } = await supabase.from('voters').insert([
-                {
-                    name: name,
-                    reg_number: studentId,
-                    email: email,
-                    phone: phone,
-                    face_hash: faceHash,
-                    has_voted: false
-                }
-            ]).select();
+            const voterRecord = {
+                name: name,
+                reg_number: studentId,
+                email: email,
+                phone: phone,
+                face_hash: faceHash,
+                face_descriptor: faceDescriptor,
+                has_voted: false
+            };
+
+            let { data, error } = await supabase.from('voters').insert([voterRecord]).select();
+
+            if (error && error.message && error.message.includes('face_descriptor')) {
+                delete voterRecord.face_descriptor;
+                ({ data, error } = await supabase.from('voters').insert([voterRecord]).select());
+            }
 
             if (error) throw error;
 
@@ -390,7 +565,32 @@
         verifyFaceBtn.disabled = true;
         verifyFaceBtn.innerHTML = 'Scanning Face...';
 
-        await authCamera.scan();
+        try {
+            const storedDescriptor = parseStoredDescriptor(voter);
+
+            if (!storedDescriptor) {
+                showMessage(voteMessage, 'This voter has no valid registered face. Please register again.', true);
+                verifyFaceBtn.disabled = false;
+                verifyFaceBtn.innerHTML = originalText;
+                return;
+            }
+
+            const faceDescriptor = await authCamera.scan();
+            const distance = faceapi.euclideanDistance(new Float32Array(faceDescriptor), storedDescriptor);
+
+            if (distance >= FACE_MATCH_THRESHOLD) {
+                showMessage(voteMessage, `Face not recognized. Match score: ${distance.toFixed(3)}. Required: below ${FACE_MATCH_THRESHOLD.toFixed(2)}.`, true);
+                verifyFaceBtn.disabled = false;
+                verifyFaceBtn.innerHTML = originalText;
+                return;
+            }
+        } catch (err) {
+            console.error('Verification error:', err);
+            showMessage(voteMessage, err.message || 'Face verification failed.', true);
+            verifyFaceBtn.disabled = false;
+            verifyFaceBtn.innerHTML = originalText;
+            return;
+        }
 
         verifiedVoterId = voter.id;
         showMessage(voteMessage, `✅ Face verified! Welcome, ${voter.name}.`);
@@ -737,6 +937,7 @@
                 if (success) {
                     verifyFaceBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Verify Identity';
                     verifyFaceBtn.style.background = 'hsl(var(--success))';
+                    setTimeout(verifyVoter, 350);
                 }
             });
         } else {

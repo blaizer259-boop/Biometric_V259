@@ -10,9 +10,13 @@ CREATE TABLE IF NOT EXISTS public.voters (
     email TEXT,
     phone TEXT,
     face_hash TEXT,
+    face_descriptor JSONB,
     has_voted BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+ALTER TABLE public.voters
+    ADD COLUMN IF NOT EXISTS face_descriptor JSONB;
 
 -- 2. Candidates Table
 CREATE TABLE IF NOT EXISTS public.candidates (
