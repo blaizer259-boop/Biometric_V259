@@ -1383,6 +1383,18 @@
         });
     }
 
+    document.querySelectorAll('[data-toggle-password]').forEach(button => {
+        button.addEventListener('click', () => {
+            const input = document.getElementById(button.dataset.togglePassword);
+            if (!input) return;
+
+            const shouldShow = input.type === 'password';
+            input.type = shouldShow ? 'text' : 'password';
+            button.textContent = shouldShow ? 'Hide' : 'Show';
+            button.setAttribute('aria-label', `${shouldShow ? 'Hide' : 'Show'} password`);
+        });
+    });
+
     document.addEventListener('click', (event) => {
         if (!accountMenu || accountMenu.hidden) return;
         if (accountMenu.contains(event.target) || authNavLink?.contains(event.target)) return;
