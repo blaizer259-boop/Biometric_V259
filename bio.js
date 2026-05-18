@@ -26,6 +26,7 @@
     let verifiedVoterId = null; // Storing the db id (UUID)
     let selectedCandidates = {}; // position -> candidate_id
     let faceModelsLoaded = false;
+    let faceModelsPromise = null;
     const FACE_MODELS_URL = 'models';
     const FACE_MATCH_THRESHOLD = 0.6;
     const DUPLICATE_FACE_THRESHOLD = 0.55;
@@ -160,7 +161,11 @@
         window.scrollTo(0, 0); // Always scroll to top on page change
 
         if (pageName === 'auth') switchAuthMode('signin');
-        if (pageName === 'register') prefillAuthenticatedVoter();
+        if (pageName === 'register') {
+            prefillAuthenticatedVoter();
+            warmFaceModels();
+        }
+        if (pageName === 'vote') warmFaceModels();
         if (pageName === 'results') updateResultsDisplay();
         if (pageName === 'admin') updateAdminDisplay();
         updateAuthUI();
@@ -417,17 +422,32 @@
 
     async function ensureFaceModelsLoaded() {
         if (faceModelsLoaded) return;
+        if (faceModelsPromise) {
+            await faceModelsPromise;
+            return;
+        }
         if (!window.faceapi) {
             throw new Error('Face recognition library failed to load. Check your internet connection.');
         }
 
-        await Promise.all([
+        faceModelsPromise = Promise.all([
             faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODELS_URL),
             faceapi.nets.faceLandmark68Net.loadFromUri(FACE_MODELS_URL),
             faceapi.nets.faceRecognitionNet.loadFromUri(FACE_MODELS_URL)
-        ]);
+        ]).then(() => {
+            faceModelsLoaded = true;
+        }).catch(error => {
+            faceModelsPromise = null;
+            throw error;
+        });
 
-        faceModelsLoaded = true;
+        await faceModelsPromise;
+    }
+
+    function warmFaceModels() {
+        ensureFaceModelsLoaded().catch(error => {
+            console.warn('Face models are not ready yet:', error);
+        });
     }
 
     async function detectCurrentFace(videoElement) {
@@ -682,14 +702,15 @@
                 if (!navigator.mediaDevices?.getUserMedia) {
                     throw new Error('Camera access is not available in this browser. On phones, open this site over HTTPS or use localhost on the device.');
                 }
-                await ensureFaceModelsLoaded();
                 if (this.stream) {
                     this.stream.getTracks().forEach(track => track.stop());
                 }
                 this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
                 this.videoElement.srcObject = this.stream;
+                await this.videoElement.play().catch(() => {});
                 this.wrapper.style.display = 'block';
                 this.placeholder.style.display = 'none';
+                warmFaceModels();
                 return true;
             } catch (err) {
                 console.error('Camera error:', err);
@@ -1471,7 +1492,12 @@
     if (backToHomeBtn) backToHomeBtn.addEventListener('click', () => showPage('home'));
 
     if (startRegisterCamera) startRegisterCamera.addEventListener('click', async () => {
+        const originalText = startRegisterCamera.innerHTML;
+        startRegisterCamera.disabled = true;
+        startRegisterCamera.textContent = 'Opening Camera...';
         const success = await regCamera.start();
+        startRegisterCamera.disabled = false;
+        startRegisterCamera.innerHTML = success ? 'Camera Ready' : originalText;
         if (success && captureRegisterBtn) captureRegisterBtn.disabled = false;
     });
 
@@ -1503,11 +1529,17 @@
 
     if (verifyFaceBtn) verifyFaceBtn.addEventListener('click', () => {
         if (!authCamera.stream) {
+            const originalText = verifyFaceBtn.innerHTML;
+            verifyFaceBtn.disabled = true;
+            verifyFaceBtn.textContent = 'Opening Camera...';
             authCamera.start().then(success => {
+                verifyFaceBtn.disabled = false;
                 if (success) {
                     verifyFaceBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Verify Identity';
                     verifyFaceBtn.style.background = 'hsl(var(--success))';
                     setTimeout(verifyVoter, 350);
+                } else {
+                    verifyFaceBtn.innerHTML = originalText;
                 }
             });
         } else {
