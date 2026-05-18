@@ -28,7 +28,7 @@
     let faceModelsLoaded = false;
     const FACE_MODELS_URL = 'models';
     const FACE_MATCH_THRESHOLD = 0.6;
-    const DUPLICATE_FACE_THRESHOLD = 0.38;
+    const DUPLICATE_FACE_THRESHOLD = 0.55;
     const FACE_SAMPLE_COUNT = 3;
     const FACE_SAMPLE_DELAY_MS = 220;
     const MIN_FACE_HEIGHT_RATIO = 0.22;
@@ -780,7 +780,7 @@
             if (duplicateFace) {
                 showMessage(
                     registerMessage,
-                    `This face is already registered as ${duplicateFace.voter.name} (${duplicateFace.voter.reg_number}). Match score: ${duplicateFace.distance.toFixed(3)}.`,
+                    `This face looks like an existing voter: ${duplicateFace.voter.name} (${duplicateFace.voter.reg_number}). Match score: ${duplicateFace.distance.toFixed(3)}. If this is wrong, remove that voter record and register it again.`,
                     true
                 );
                 captureRegisterBtn.disabled = false;
