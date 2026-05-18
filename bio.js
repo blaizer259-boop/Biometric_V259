@@ -16,6 +16,7 @@
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let voters = [];
+    let userProfiles = [];
     let positions = [
         'President', 'Vice President', 'Secretary General', 'Finance Secretary',
         'Secretary for Academics', 'Secretary for Clubs and Society', 'Secretary for Sports and Entertainment'
@@ -25,18 +26,20 @@
     let verifiedVoterId = null; // Storing the db id (UUID)
     let selectedCandidates = {}; // position -> candidate_id
     let faceModelsLoaded = false;
-    const FACE_MODELS_URL = '/models';
+    const FACE_MODELS_URL = 'models';
     const FACE_MATCH_THRESHOLD = 0.6;
     const DUPLICATE_FACE_THRESHOLD = 0.55;
     const FACE_SAMPLE_COUNT = 3;
     const FACE_SAMPLE_DELAY_MS = 220;
     const MIN_FACE_HEIGHT_RATIO = 0.22;
     const MAX_FACE_HEIGHT_RATIO = 0.48;
+    const PROTECTED_PAGES = new Set(['register', 'vote']);
 
     // ---------- DOM Elements ----------
-    const navLinks = document.querySelectorAll('.nav-link');
+    const navLinks = document.querySelectorAll('a.nav-link');
     const pages = {
         home: document.getElementById('homePage'),
+        auth: document.getElementById('authPage'),
         register: document.getElementById('registerPage'),
         vote: document.getElementById('votePage'),
         results: document.getElementById('resultsPage'),
@@ -86,21 +89,65 @@
     const adminCandidates = document.getElementById('adminCandidates');
     const adminVotes = document.getElementById('adminVotes');
     const adminVotersTable = document.getElementById('adminVotersTable');
+    const adminAccountsTable = document.getElementById('adminAccountsTable');
     const adminCandidatesList = document.getElementById('adminCandidatesList');
     const newCandidatePosition = document.getElementById('newCandidatePosition');
     const addCandidateForm = document.getElementById('addCandidateForm');
     const addCandidateMessage = document.getElementById('addCandidateMessage');
     const resetElectionBtn = document.getElementById('resetElectionBtn');
 
+    // User auth page
+    const authNavLink = document.getElementById('authNavLink');
+    const authNavText = document.getElementById('authNavText');
+    const authNavAvatar = document.getElementById('authNavAvatar');
+    const authNavPhoto = document.getElementById('authNavPhoto');
+    const authNavInitials = document.getElementById('authNavInitials');
+    const authLogoutBtn = document.getElementById('authLogoutBtn');
+    const accountMenu = document.getElementById('accountMenu');
+    const accountMenuClose = document.getElementById('accountMenuClose');
+    const accountMenuEmail = document.getElementById('accountMenuEmail');
+    const accountMenuAvatar = document.getElementById('accountMenuAvatar');
+    const accountMenuPhoto = document.getElementById('accountMenuPhoto');
+    const accountMenuInitials = document.getElementById('accountMenuInitials');
+    const accountMenuGreeting = document.getElementById('accountMenuGreeting');
+    const accountProfileBtn = document.getElementById('accountProfileBtn');
+    const authTitle = document.getElementById('authTitle');
+    const authSubtitle = document.getElementById('authSubtitle');
+    const signInForm = document.getElementById('signInForm');
+    const signUpForm = document.getElementById('signUpForm');
+    const signInEmail = document.getElementById('signInEmail');
+    const signInPassword = document.getElementById('signInPassword');
+    const signUpFirstName = document.getElementById('signUpFirstName');
+    const signUpLastName = document.getElementById('signUpLastName');
+    const signUpEmail = document.getElementById('signUpEmail');
+    const signUpPassword = document.getElementById('signUpPassword');
+    const authMessage = document.getElementById('authMessage');
+
     // Home Buttons
     const homeRegisterBtn = document.getElementById('homeRegisterBtn');
     const homeVoteBtn = document.getElementById('homeVoteBtn');
     const viewResultsBtn = document.getElementById('viewResultsBtn');
 
+    let pendingAuthPage = 'home';
+    let currentPage = 'home';
+    let currentAuthSession = null;
+    let currentAuthUser = null;
+
     // ---------- Helper Functions ----------
-    function showPage(pageName) {
-        Object.values(pages).forEach(page => page.classList.remove('active-page'));
+    function showPage(pageName, options = {}) {
+        if (PROTECTED_PAGES.has(pageName) && !isAuthenticated() && !options.skipAuthGate) {
+            pendingAuthPage = pageName;
+            switchAuthMode('signin');
+            showPage('auth', { skipAuthGate: true });
+            showMessage(authMessage, 'Please sign in or create an account to continue.', true);
+            return;
+        }
+
+        Object.values(pages).forEach(page => {
+            if (page) page.classList.remove('active-page');
+        });
         if (pages[pageName]) pages[pageName].classList.add('active-page');
+        currentPage = pageName;
 
         navLinks.forEach(link => {
             link.classList.remove('active');
@@ -111,8 +158,11 @@
 
         window.scrollTo(0, 0); // Always scroll to top on page change
 
+        if (pageName === 'auth') switchAuthMode('signin');
+        if (pageName === 'register') prefillAuthenticatedVoter();
         if (pageName === 'results') updateResultsDisplay();
         if (pageName === 'admin') updateAdminDisplay();
+        updateAuthUI();
     }
 
     function showMessage(element, text, isError = false) {
@@ -122,6 +172,219 @@
         setTimeout(() => {
             if (element.textContent === text) element.textContent = '';
         }, 5000);
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, character => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        })[character]);
+    }
+
+    function formatDate(value) {
+        if (!value) return '-';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '-';
+        return date.toLocaleDateString(undefined, {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    }
+
+    function isAuthenticated() {
+        return Boolean(currentAuthUser);
+    }
+
+    function isCurrentUserAdmin() {
+        return currentAuthUser?.app_metadata?.role === 'admin';
+    }
+
+    function normalizeEmail(email) {
+        return String(email || '').trim().toLowerCase();
+    }
+
+    function getAuthMetadata(user = currentAuthUser) {
+        const metadata = user?.user_metadata || {};
+        const email = user?.email || '';
+        const emailName = email.split('@')[0] || '';
+        const displayName = metadata.full_name || metadata.name || '';
+        const firstName = metadata.first_name || metadata.firstName || displayName.split(/\s+/)[0] || '';
+        const lastName = metadata.last_name || metadata.lastName || '';
+        const fullName = displayName || `${firstName} ${lastName}`.trim() || emailName || email || 'Account';
+        const photoURL = metadata.avatar_url || metadata.picture || '';
+
+        return {
+            firstName,
+            lastName,
+            fullName,
+            email,
+            emailName,
+            photoURL
+        };
+    }
+
+    function getProfileInitials(metadata) {
+        const sourceName = metadata.fullName && metadata.fullName !== metadata.email
+            ? metadata.fullName
+            : metadata.emailName;
+        const nameParts = String(sourceName || '')
+            .trim()
+            .replace(/[^a-z0-9]+/gi, ' ')
+            .split(/\s+/)
+            .filter(Boolean);
+
+        if (nameParts.length >= 2) {
+            return `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase();
+        }
+
+        if (nameParts.length === 1 && !nameParts[0].includes('@')) {
+            return nameParts[0].slice(0, 2).toUpperCase();
+        }
+
+        return String(metadata.email || 'AC').slice(0, 2).toUpperCase();
+    }
+
+    function renderAvatar(photoElement, initialsElement, photoURL, initials) {
+        if (photoElement) {
+            photoElement.hidden = !photoURL;
+            if (photoURL) photoElement.src = photoURL;
+            else photoElement.removeAttribute('src');
+            photoElement.onerror = () => {
+                photoElement.hidden = true;
+                photoElement.removeAttribute('src');
+                if (initialsElement) initialsElement.hidden = false;
+            };
+        }
+        if (initialsElement) {
+            initialsElement.hidden = Boolean(photoURL);
+            initialsElement.textContent = initials;
+        }
+    }
+
+    function closeAccountMenu() {
+        if (accountMenu) accountMenu.hidden = true;
+        if (authNavLink) authNavLink.setAttribute('aria-expanded', 'false');
+    }
+
+    function toggleAccountMenu() {
+        if (!accountMenu || !isAuthenticated()) return;
+        const shouldOpen = accountMenu.hidden;
+        accountMenu.hidden = !shouldOpen;
+        if (authNavLink) authNavLink.setAttribute('aria-expanded', String(shouldOpen));
+    }
+
+    function switchAuthMode(mode) {
+        const isSignUp = mode === 'signup';
+
+        document.querySelectorAll('[data-auth-mode]').forEach(button => {
+            button.classList.toggle('active', button.dataset.authMode === mode);
+        });
+
+        if (signInForm) signInForm.hidden = isSignUp;
+        if (signUpForm) signUpForm.hidden = !isSignUp;
+        if (authTitle) authTitle.textContent = isSignUp ? 'Create your account' : 'Welcome back';
+        if (authSubtitle) {
+            authSubtitle.textContent = isSignUp
+                ? 'Set up secure access before registering or voting.'
+                : 'Sign in to continue to the secure election portal.';
+        }
+        if (authMessage) authMessage.textContent = '';
+    }
+
+    function updateAuthUI() {
+        const isSignedIn = Boolean(currentAuthUser);
+        const metadata = getAuthMetadata();
+        const initials = getProfileInitials(metadata);
+
+        if (authNavText) {
+            authNavText.textContent = 'Sign In';
+            authNavText.hidden = isSignedIn;
+        }
+        if (authNavAvatar) {
+            authNavAvatar.hidden = !isSignedIn;
+        }
+        renderAvatar(authNavPhoto, authNavInitials, isSignedIn ? metadata.photoURL : '', initials);
+        if (authNavLink) {
+            authNavLink.classList.toggle('is-profile', isSignedIn);
+            authNavLink.setAttribute('aria-label', isSignedIn ? 'Open profile menu' : 'Sign in');
+            authNavLink.title = isSignedIn ? `Signed in as ${metadata.email}` : 'Sign in';
+        }
+        if (authLogoutBtn) {
+            authLogoutBtn.hidden = !isSignedIn;
+        }
+        if (!isSignedIn) {
+            closeAccountMenu();
+        }
+        if (accountMenuEmail) {
+            accountMenuEmail.textContent = metadata.email || '';
+        }
+        renderAvatar(accountMenuPhoto, accountMenuInitials, isSignedIn ? metadata.photoURL : '', initials);
+        if (accountMenuGreeting) {
+            accountMenuGreeting.textContent = `Hi, ${metadata.firstName || metadata.emailName || 'Student'}!`;
+        }
+    }
+
+    function prefillAuthenticatedVoter() {
+        if (!currentAuthUser) return;
+        const metadata = getAuthMetadata();
+
+        if (voterFirstName && !voterFirstName.value) voterFirstName.value = metadata.firstName || '';
+        if (voterLastName && !voterLastName.value) voterLastName.value = metadata.lastName || '';
+        if (voterEmail && !voterEmail.value) voterEmail.value = metadata.email || '';
+    }
+
+    async function syncUserProfile(user = currentAuthUser) {
+        if (!user) return;
+
+        const metadata = getAuthMetadata(user);
+        const { error } = await supabase
+            .from('user_profiles')
+            .upsert({
+                id: user.id,
+                email: metadata.email,
+                first_name: metadata.firstName,
+                last_name: metadata.lastName,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'id' });
+
+        if (error) {
+            console.warn('Could not sync user profile. Make sure migration 005_auth_user_profiles.sql is applied.', error);
+        }
+    }
+
+    async function logoutUser() {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            alert('Logout failed: ' + error.message);
+            return;
+        }
+
+        currentAuthSession = null;
+        currentAuthUser = null;
+        closeAccountMenu();
+        updateAuthUI();
+
+        if (PROTECTED_PAGES.has(currentPage)) {
+            showPage('home');
+        } else if (currentPage === 'admin') {
+            updateAdminDisplay();
+        }
+    }
+
+    async function refreshAuthSession() {
+        const { data, error } = await supabase.auth.getUser();
+
+        if (error) {
+            console.warn('Could not restore Supabase Auth user:', error);
+        }
+
+        currentAuthUser = data?.user || null;
+        currentAuthSession = currentAuthUser ? { user: currentAuthUser } : null;
+        updateAuthUI();
     }
 
     async function ensureFaceModelsLoaded() {
@@ -388,6 +651,9 @@
 
         async start() {
             try {
+                if (!navigator.mediaDevices?.getUserMedia) {
+                    throw new Error('Camera access is not available in this browser. On phones, open this site over HTTPS or use localhost on the device.');
+                }
                 await ensureFaceModelsLoaded();
                 if (this.stream) {
                     this.stream.getTracks().forEach(track => track.stop());
@@ -399,6 +665,12 @@
                 return true;
             } catch (err) {
                 console.error('Camera error:', err);
+                const messageTarget = this.type === 'register' ? registerMessage : voteMessage;
+                const isInsecurePhoneLink = !window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1';
+                const fallbackMessage = isInsecurePhoneLink
+                    ? 'Camera access is blocked on phone browsers over plain HTTP. Use an HTTPS link for face scanning.'
+                    : 'Unable to access the camera. Allow camera permission and try again.';
+                showMessage(messageTarget, err.message || fallbackMessage, true);
                 return false;
             }
         }
@@ -427,6 +699,12 @@
 
     // ---------- Registration ----------
     async function captureAndRegister() {
+        if (!isAuthenticated()) {
+            showPage('auth');
+            showMessage(authMessage, 'Please sign in before registering as a voter.', true);
+            return;
+        }
+
         const firstName = voterFirstName.value.trim();
         const lastName = voterLastName.value.trim();
         const name = `${firstName} ${lastName}`.trim();
@@ -501,6 +779,7 @@
                 phone: phone,
                 face_hash: faceHash,
                 face_descriptor: faceDescriptor,
+                auth_user_id: currentAuthUser?.id || null,
                 has_voted: false
             };
 
@@ -508,6 +787,11 @@
 
             if (error && error.message && error.message.includes('face_descriptor')) {
                 delete voterRecord.face_descriptor;
+                ({ data, error } = await supabase.from('voters').insert([voterRecord]).select());
+            }
+
+            if (error && error.message && error.message.includes('auth_user_id')) {
+                delete voterRecord.auth_user_id;
                 ({ data, error } = await supabase.from('voters').insert([voterRecord]).select());
             }
 
@@ -537,6 +821,12 @@
 
     // ---------- Voting Auth & Ballot ----------
     async function verifyVoter() {
+        if (!isAuthenticated()) {
+            showPage('auth');
+            showMessage(authMessage, 'Please sign in before verifying your voter identity.', true);
+            return;
+        }
+
         const studentId = verifyStudentId.value.trim();
 
         if (!studentId) {
@@ -653,6 +943,12 @@
     }
 
     async function submitVote() {
+        if (!isAuthenticated()) {
+            showPage('auth');
+            showMessage(authMessage, 'Please sign in before submitting a ballot.', true);
+            return;
+        }
+
         if (!verifiedVoterId) {
             showMessage(voteMessage, 'Authentication required.', true);
             return;
@@ -766,9 +1062,41 @@
 
     // ---------- Admin Page ----------
     function updateAdminDisplay() {
+        const adminLoginGate = document.getElementById('adminLoginGate');
+        const adminDashboard = document.getElementById('adminDashboard');
+
+        if (adminLoginGate && adminDashboard) {
+            const hasAdminAccess = isCurrentUserAdmin();
+            adminLoginGate.style.display = hasAdminAccess ? 'none' : 'flex';
+            adminDashboard.style.display = hasAdminAccess ? 'block' : 'none';
+
+            if (!hasAdminAccess) return;
+        }
+
         updateAllStats();
         renderAdminVotersTable();
+        fetchAndRenderUserProfiles();
         renderAdminCandidates();
+    }
+
+    async function fetchAndRenderUserProfiles() {
+        if (!adminAccountsTable || !isCurrentUserAdmin()) return;
+
+        adminAccountsTable.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:3rem; color:#adb5bd;">Loading accounts...</td></tr>';
+
+        try {
+            const { data, error } = await supabase
+                .from('user_profiles')
+                .select('id,email,first_name,last_name,created_at,updated_at')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            userProfiles = data || [];
+            renderAdminAccountsTable();
+        } catch (err) {
+            console.error('Error fetching user profiles:', err);
+            adminAccountsTable.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:3rem; color:hsl(var(--destructive));">Could not load signup accounts. Apply migration 005_auth_user_profiles.sql to allow admin profile reads.</td></tr>';
+        }
     }
 
     window.deleteVoter = async function (id) {
@@ -814,6 +1142,26 @@
                 </td>
             </tr>
         `).join('');
+    }
+
+    function renderAdminAccountsTable() {
+        if (!adminAccountsTable) return;
+        if (userProfiles.length === 0) {
+            adminAccountsTable.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:3rem; color:#adb5bd;">No student accounts found</td></tr>';
+            return;
+        }
+
+        adminAccountsTable.innerHTML = userProfiles.map(profile => {
+            const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Account';
+
+            return `
+            <tr>
+                <td>${escapeHtml(fullName)}</td>
+                <td>${escapeHtml(profile.email || '-')}</td>
+                <td>${formatDate(profile.created_at)}</td>
+                <td>${formatDate(profile.updated_at)}</td>
+            </tr>`;
+        }).join('');
     }
 
     function renderAdminCandidates() {
@@ -883,16 +1231,165 @@
         });
     }
 
+    if (signInForm) {
+        signInForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = normalizeEmail(signInEmail.value);
+            const password = signInPassword.value;
+            const submitButton = signInForm.querySelector('button[type="submit"]');
+            const originalText = submitButton.textContent;
+
+            submitButton.disabled = true;
+            submitButton.textContent = 'Signing In...';
+
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
+
+            if (error) {
+                showMessage(authMessage, error.message || 'Sign in failed. Please try again.', true);
+                submitButton.disabled = false;
+                submitButton.textContent = originalText;
+                return;
+            }
+
+            currentAuthSession = data.session;
+            currentAuthUser = data.user;
+            await syncUserProfile(currentAuthUser);
+            updateAuthUI();
+            showMessage(authMessage, `Signed in as ${getAuthMetadata().fullName}.`);
+
+            const destination = pendingAuthPage || 'home';
+            pendingAuthPage = 'home';
+            window.setTimeout(() => {
+                submitButton.disabled = false;
+                submitButton.textContent = originalText;
+                showPage(destination);
+            }, 700);
+        });
+    }
+
+    if (signUpForm) {
+        signUpForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const firstName = signUpFirstName.value.trim();
+            const lastName = signUpLastName.value.trim();
+            const email = normalizeEmail(signUpEmail.value);
+            const password = signUpPassword.value;
+            const submitButton = signUpForm.querySelector('button[type="submit"]');
+            const originalText = submitButton.textContent;
+
+            if (!firstName || !lastName || !email || password.length < 6) {
+                showMessage(authMessage, 'Enter your name, email, and a password with at least 6 characters.', true);
+                return;
+            }
+
+            submitButton.disabled = true;
+            submitButton.textContent = 'Creating Account...';
+
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        first_name: firstName,
+                        last_name: lastName,
+                        full_name: `${firstName} ${lastName}`
+                    }
+                }
+            });
+
+            if (error) {
+                showMessage(authMessage, error.message || 'Account creation failed. Please try again.', true);
+                submitButton.disabled = false;
+                submitButton.textContent = originalText;
+                return;
+            }
+
+            if (!data.session) {
+                showMessage(authMessage, 'Account created. Check your email to confirm, then sign in.');
+                switchAuthMode('signin');
+                if (signInEmail) signInEmail.value = email;
+                signUpForm.reset();
+                submitButton.disabled = false;
+                submitButton.textContent = originalText;
+                return;
+            }
+
+            currentAuthSession = data.session;
+            currentAuthUser = data.user;
+            await syncUserProfile(currentAuthUser);
+            updateAuthUI();
+            signUpForm.reset();
+            showMessage(authMessage, `Account created for ${firstName}.`);
+
+            const destination = pendingAuthPage || 'register';
+            pendingAuthPage = 'home';
+            window.setTimeout(() => {
+                submitButton.disabled = false;
+                submitButton.textContent = originalText;
+                showPage(destination);
+            }, 700);
+        });
+    }
+
+    document.querySelectorAll('[data-auth-mode]').forEach(button => {
+        button.addEventListener('click', () => switchAuthMode(button.dataset.authMode));
+    });
+
+    if (authLogoutBtn) {
+        authLogoutBtn.addEventListener('click', logoutUser);
+    }
+
+    if (accountMenuClose) {
+        accountMenuClose.addEventListener('click', closeAccountMenu);
+    }
+
+    if (accountProfileBtn) {
+        accountProfileBtn.addEventListener('click', () => {
+            closeAccountMenu();
+            showPage('register');
+        });
+    }
+
+    document.addEventListener('click', (event) => {
+        if (!accountMenu || accountMenu.hidden) return;
+        if (accountMenu.contains(event.target) || authNavLink?.contains(event.target)) return;
+        closeAccountMenu();
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeAccountMenu();
+    });
+
     // ---------- Event Listeners Setup ----------
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
+
+            if (link === authNavLink && isAuthenticated()) {
+                toggleAccountMenu();
+                if (navMenu) navMenu.classList.remove('active');
+                if (mobileToggle) mobileToggle.setAttribute('aria-expanded', 'false');
+                return;
+            }
+
+            closeAccountMenu();
             showPage(link.dataset.page);
             if (navMenu) navMenu.classList.remove('active');
+            if (mobileToggle) mobileToggle.setAttribute('aria-expanded', 'false');
         });
     });
 
-    if (mobileToggle) mobileToggle.addEventListener('click', () => navMenu.classList.toggle('active'));
+    if (mobileToggle && navMenu) {
+        mobileToggle.addEventListener('click', () => {
+            const isOpen = navMenu.classList.toggle('active');
+            mobileToggle.setAttribute('aria-expanded', String(isOpen));
+        });
+    }
 
     if (homeRegisterBtn) homeRegisterBtn.addEventListener('click', () => showPage('register'));
     if (homeVoteBtn) homeVoteBtn.addEventListener('click', () => showPage('vote'));
@@ -951,17 +1448,64 @@
     const adminLoginGate = document.getElementById('adminLoginGate');
     const adminDashboard = document.getElementById('adminDashboard');
     if (adminLoginForm) {
-        adminLoginForm.addEventListener('submit', (e) => {
+        adminLoginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            adminLoginGate.style.display = 'none';
-            adminDashboard.style.display = 'block';
+
+            const adminEmail = document.getElementById('adminEmail').value.trim();
+            const adminPassword = document.getElementById('adminPassword').value;
+            const adminLoginError = document.getElementById('adminLoginError');
+            const submitButton = adminLoginForm.querySelector('button[type="submit"]');
+            const originalText = submitButton.innerHTML;
+
+            if (adminLoginError) adminLoginError.style.display = 'none';
+            submitButton.disabled = true;
+            submitButton.innerHTML = 'Signing In...';
+
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: adminEmail,
+                password: adminPassword
+            });
+
+            if (error) {
+                if (adminLoginError) {
+                    adminLoginError.textContent = error.message || 'Invalid admin credentials.';
+                    adminLoginError.style.display = 'block';
+                }
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalText;
+                return;
+            }
+
+            currentAuthSession = data.session;
+            currentAuthUser = data.user;
+
+            if (!isCurrentUserAdmin()) {
+                await supabase.auth.signOut();
+                currentAuthSession = null;
+                currentAuthUser = null;
+                updateAuthUI();
+
+                if (adminLoginError) {
+                    adminLoginError.textContent = 'This account is not authorized for admin access.';
+                    adminLoginError.style.display = 'block';
+                }
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalText;
+                return;
+            }
+
+            await syncUserProfile(currentAuthUser);
+            updateAuthUI();
             updateAdminDisplay();
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalText;
         });
     }
 
     const adminLogoutBtn = document.getElementById('adminLogoutBtn');
     if (adminLogoutBtn) {
-        adminLogoutBtn.addEventListener('click', () => {
+        adminLogoutBtn.addEventListener('click', async () => {
+            await logoutUser();
             adminDashboard.style.display = 'none';
             adminLoginGate.style.display = 'flex';
         });
@@ -1018,12 +1562,31 @@
             const tabName = tab.getAttribute('data-admin-tab');
             document.getElementById('adminTabVoters').style.display = tabName === 'voters' ? 'block' : 'none';
             document.getElementById('adminTabCandidates').style.display = tabName === 'candidates' ? 'block' : 'none';
+            document.getElementById('adminTabAccounts').style.display = tabName === 'accounts' ? 'block' : 'none';
             document.getElementById('adminTabAddCandidate').style.display = tabName === 'addCandidate' ? 'block' : 'none';
+
+            if (tabName === 'accounts') fetchAndRenderUserProfiles();
         });
     });
 
     // Initialize application
-    function initialize() {
+    async function initialize() {
+        await refreshAuthSession();
+        supabase.auth.onAuthStateChange(async (_event, session) => {
+            currentAuthSession = session;
+            currentAuthUser = session?.user || null;
+            updateAuthUI();
+
+            if (currentAuthUser) {
+                await syncUserProfile(currentAuthUser);
+            }
+
+            if (currentPage === 'admin') {
+                updateAdminDisplay();
+            }
+        });
+
+        switchAuthMode('signin');
         populatePositionSelect();
         if (SUPABASE_KEY !== 'YOUR_SUPABASE_ANON_KEY') {
             loadDataFromSupabase().then(() => {
@@ -1034,5 +1597,7 @@
         }
     }
 
-    initialize();
+    initialize().catch(error => {
+        console.error('Application initialization failed:', error);
+    });
 })();

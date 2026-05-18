@@ -44,7 +44,7 @@ async function boot() {
     await initFaceLogin({
       supabase,
       video: elements.camera,
-      modelsUrl: "/models",
+      modelsUrl: "models",
     });
 
     isReady = true;

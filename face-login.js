@@ -1,6 +1,6 @@
 import * as faceapi from "face-api.js";
 
-const DEFAULT_MODELS_URL = "/models";
+const DEFAULT_MODELS_URL = "models";
 const MATCH_DISTANCE_THRESHOLD = 0.6;
 const DUPLICATE_FACE_THRESHOLD = 0.55;
 const DESCRIPTOR_MIN_NORM = 0.01;
@@ -19,7 +19,7 @@ let modelsLoaded = false;
  * @param {object} options
  * @param {import("@supabase/supabase-js").SupabaseClient} options.supabase
  * @param {HTMLVideoElement|string} options.video
- * @param {string} [options.modelsUrl="/models"]
+ * @param {string} [options.modelsUrl="models"]
  */
 export async function initFaceLogin({
   supabase,
