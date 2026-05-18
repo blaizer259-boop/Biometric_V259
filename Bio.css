@@ -514,6 +514,24 @@ body {
     min-height: 2.5rem;
 }
 
+.auth-secondary-action {
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: hsl(var(--primary));
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
+    padding: 0.2rem 0;
+}
+
+.auth-secondary-action:hover,
+.auth-secondary-action:focus-visible {
+    text-decoration: underline;
+    outline: none;
+}
+
 /* Hero Section Wrapper */
 .hero-wrapper {
     position: relative;

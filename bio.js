@@ -117,6 +117,7 @@
     const signUpForm = document.getElementById('signUpForm');
     const signInEmail = document.getElementById('signInEmail');
     const signInPassword = document.getElementById('signInPassword');
+    const resendConfirmationBtn = document.getElementById('resendConfirmationBtn');
     const signUpFirstName = document.getElementById('signUpFirstName');
     const signUpLastName = document.getElementById('signUpLastName');
     const signUpEmail = document.getElementById('signUpEmail');
@@ -1361,6 +1362,38 @@
                 submitButton.textContent = originalText;
                 showPage(destination);
             }, 700);
+        });
+    }
+
+    if (resendConfirmationBtn) {
+        resendConfirmationBtn.addEventListener('click', async () => {
+            const email = normalizeEmail(signInEmail?.value);
+
+            if (!email) {
+                showMessage(authMessage, 'Enter your email address first, then resend confirmation.', true);
+                return;
+            }
+
+            const originalText = resendConfirmationBtn.textContent;
+            resendConfirmationBtn.disabled = true;
+            resendConfirmationBtn.textContent = 'Sending...';
+
+            const { error } = await supabase.auth.resend({
+                type: 'signup',
+                email,
+                options: {
+                    emailRedirectTo: `${window.location.origin}${window.location.pathname}`
+                }
+            });
+
+            if (error) {
+                showMessage(authMessage, readableAuthError(error, 'Could not resend confirmation email.'), true);
+            } else {
+                showMessage(authMessage, 'Confirmation email sent. Open it, then sign in.');
+            }
+
+            resendConfirmationBtn.disabled = false;
+            resendConfirmationBtn.textContent = originalText;
         });
     }
 
