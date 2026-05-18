@@ -450,6 +450,37 @@
         });
     }
 
+    function waitForVideoFrame(videoElement, timeoutMs = 2500) {
+        if (!videoElement) return Promise.resolve();
+        if (videoElement.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && videoElement.videoWidth > 0) {
+            return Promise.resolve();
+        }
+
+        return new Promise(resolve => {
+            let settled = false;
+            const finish = () => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                videoElement.removeEventListener('loadeddata', finish);
+                videoElement.removeEventListener('canplay', finish);
+            };
+            const timer = setTimeout(() => {
+                finish();
+                resolve();
+            }, timeoutMs);
+
+            videoElement.addEventListener('loadeddata', () => {
+                finish();
+                resolve();
+            }, { once: true });
+            videoElement.addEventListener('canplay', () => {
+                finish();
+                resolve();
+            }, { once: true });
+        });
+    }
+
     async function detectCurrentFace(videoElement) {
         await ensureFaceModelsLoaded();
 
@@ -708,6 +739,7 @@
                 this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
                 this.videoElement.srcObject = this.stream;
                 await this.videoElement.play().catch(() => {});
+                await waitForVideoFrame(this.videoElement);
                 this.wrapper.style.display = 'block';
                 this.placeholder.style.display = 'none';
                 warmFaceModels();
@@ -1537,7 +1569,7 @@
                 if (success) {
                     verifyFaceBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Verify Identity';
                     verifyFaceBtn.style.background = 'hsl(var(--success))';
-                    setTimeout(verifyVoter, 350);
+                    showMessage(voteMessage, 'Camera is ready. Position your face, then tap Verify Identity.', false);
                 } else {
                     verifyFaceBtn.innerHTML = originalText;
                 }
