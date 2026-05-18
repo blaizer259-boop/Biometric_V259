@@ -174,6 +174,25 @@
         }, 5000);
     }
 
+    function readableAuthError(error, fallback = 'Authentication failed. Please try again.') {
+        const code = error?.code || '';
+        const message = error?.message || '';
+
+        if (code === 'email_address_invalid' || /email address .* invalid/i.test(message)) {
+            return 'Supabase rejected that email address. Use a real email account you can open, then try again.';
+        }
+
+        if (code === 'over_email_send_rate_limit' || /rate limit/i.test(message)) {
+            return 'Supabase is temporarily limiting confirmation emails. Wait a few minutes, then try again.';
+        }
+
+        if (/already registered|already exists/i.test(message)) {
+            return 'That email already has an account. Use Sign In instead.';
+        }
+
+        return message || fallback;
+    }
+
     function escapeHtml(value) {
         return String(value ?? '').replace(/[&<>"']/g, character => ({
             '&': '&amp;',
@@ -1249,7 +1268,7 @@
             });
 
             if (error) {
-                showMessage(authMessage, error.message || 'Sign in failed. Please try again.', true);
+                showMessage(authMessage, readableAuthError(error, 'Sign in failed. Please try again.'), true);
                 submitButton.disabled = false;
                 submitButton.textContent = originalText;
                 return;
@@ -1303,7 +1322,7 @@
             });
 
             if (error) {
-                showMessage(authMessage, error.message || 'Account creation failed. Please try again.', true);
+                showMessage(authMessage, readableAuthError(error, 'Account creation failed. Please try again.'), true);
                 submitButton.disabled = false;
                 submitButton.textContent = originalText;
                 return;
