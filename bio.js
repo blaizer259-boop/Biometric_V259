@@ -178,6 +178,14 @@
         const code = error?.code || '';
         const message = error?.message || '';
 
+        if (code === 'invalid_credentials' || /invalid login credentials/i.test(message)) {
+            return 'Invalid login credentials. If you just created this account, open the confirmation email first. If no email arrived, signup may not have completed because Supabase is rate-limiting confirmation emails.';
+        }
+
+        if (code === 'email_not_confirmed' || /email not confirmed/i.test(message)) {
+            return 'Confirm your email before signing in. Open the confirmation link Supabase sent to your inbox, then try again.';
+        }
+
         if (code === 'email_address_invalid' || /email address .* invalid/i.test(message)) {
             return 'Supabase rejected that email address. Use a real email account you can open, then try again.';
         }
@@ -1313,6 +1321,7 @@
                 email,
                 password,
                 options: {
+                    emailRedirectTo: `${window.location.origin}${window.location.pathname}`,
                     data: {
                         first_name: firstName,
                         last_name: lastName,
@@ -1329,7 +1338,7 @@
             }
 
             if (!data.session) {
-                showMessage(authMessage, 'Account created. Check your email to confirm, then sign in.');
+                showMessage(authMessage, 'Account created, but you must confirm your email before login. Open the Supabase confirmation email, then sign in.');
                 switchAuthMode('signin');
                 if (signInEmail) signInEmail.value = email;
                 signUpForm.reset();
