@@ -7,7 +7,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         index: resolve(__dirname, 'index.html'),
-        biometric: resolve(__dirname, 'Biometric.html')
+        biometric: resolve(__dirname, 'Biometric.html'),
+        homepageMockup: resolve(__dirname, 'homepage-mockup.html')
       }
     }
   }
