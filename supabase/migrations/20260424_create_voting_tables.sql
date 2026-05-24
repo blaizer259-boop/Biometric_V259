@@ -11,12 +11,19 @@ CREATE TABLE IF NOT EXISTS public.voters (
     phone TEXT,
     face_hash TEXT,
     face_descriptor JSONB,
+    auth_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     has_voted BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 ALTER TABLE public.voters
     ADD COLUMN IF NOT EXISTS face_descriptor JSONB;
+
+ALTER TABLE public.voters
+    ADD COLUMN IF NOT EXISTS auth_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS voters_auth_user_id_idx
+    ON public.voters (auth_user_id);
 
 -- 2. Candidates Table
 CREATE TABLE IF NOT EXISTS public.candidates (

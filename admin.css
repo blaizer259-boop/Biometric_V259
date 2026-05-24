@@ -160,6 +160,10 @@
     background-color: #ef4444;
 }
 
+.toast-info {
+    background-color: #3730a3;
+}
+
 /* Responsive table fix */
 @media (max-width: 640px) {
     #usersTableBody td,

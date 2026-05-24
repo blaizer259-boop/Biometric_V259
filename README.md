@@ -49,11 +49,35 @@ http://127.0.0.1:5173/Biometric.html
 
 ## Flow
 
+- Student accounts are created and signed in with Supabase Auth.
+- Signed-in user profile names are stored in `public.user_profiles` and linked to the Supabase Auth user id.
 - Voter registration captures a real face descriptor and stores it with the voter record.
+- New voter records are linked to the signed-in Auth user when migration `005_auth_user_profiles.sql` has been applied.
+- Admin access requires a Supabase Auth account with `app_metadata.role` set to `admin`.
 - Duplicate face registration is blocked by comparing the new scan with already-registered voter descriptors.
 - Voter authentication compares the live webcam face with the registered descriptor before opening the ballot.
 - Registration and login both sample three frames and require the face to be framed at roughly a 50cm webcam distance.
 
 ## Security Note
 
-This demo performs the face match in the browser. For production authentication, move the final authorization decision to a trusted server or Supabase Edge Function and pair it with normal Supabase Auth.
+Supabase Auth now handles account passwords and sessions. This demo still performs the face match in the browser. For production voting, move the final biometric authorization decision to a trusted server or Supabase Edge Function and enable strict Row Level Security policies for the voting tables.
+
+To make an admin account, create the user in Supabase Auth and set the user's app metadata to:
+
+```json
+{
+  "role": "admin"
+}
+```
+
+Or create/reset it from this project with:
+
+```bash
+SUPABASE_SERVICE_ROLE_KEY="your-service-role-key" ADMIN_EMAIL="admin@university.edu" ADMIN_PASSWORD="your-strong-password" npm run auth:create-admin
+```
+
+To backfill Auth signups into `public.user_profiles`, run:
+
+```bash
+npm run auth:sync-profiles
+```

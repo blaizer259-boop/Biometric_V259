@@ -152,23 +152,7 @@ async function fetchVoters() {
 }
 
 async function deleteVoter(id) {
-    if (!confirm('Are you sure you want to delete this voter record? This action cannot be undone.')) return;
-
-    if (supabase) {
-        try {
-            const { error } = await supabase.from('voters').delete().eq('id', id);
-            if (error) throw error;
-            showToast('Voter deleted successfully', 'success');
-        } catch (err) {
-            console.error('Delete error:', err);
-            showToast('Failed to delete voter', 'error');
-            return;
-        }
-    } else {
-        localVoters = localVoters.filter(v => v.id !== id);
-        showToast('Voter deleted successfully', 'success');
-    }
-    loadDashboardData();
+    showToast('Registered voter records are locked for election integrity.', 'info');
 }
 
 async function updateVoter(id, updates) {
@@ -264,9 +248,7 @@ function renderTable(voters) {
                     <button class="btn-edit" onclick="openEditModal(${voter.id})" title="Edit">
                         <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                     </button>
-                    <button class="btn-delete" onclick="handleDelete(${voter.id})" title="Delete">
-                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                    </button>
+                    <span class="px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 text-xs font-bold" title="Voter records cannot be removed from the admin panel.">Locked</span>
                 </div>
             </td>
         </tr>
