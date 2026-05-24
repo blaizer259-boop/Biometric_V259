@@ -326,6 +326,11 @@
                                         aria-label="Show sign in password">Show</button>
                                 </div>
                             </div>
+                            <div class="auth-inline-actions">
+                                <button class="auth-secondary-action" id="forgotPasswordBtn" type="button">
+                                    Forgot password?
+                                </button>
+                            </div>
                             <button class="btn btn-primary-full" type="submit">Sign In</button>
                             <button class="auth-secondary-action" id="resendConfirmationBtn" type="button">
                                 Resend confirmation email
@@ -354,13 +359,54 @@
                                 <label for="signUpPassword">Password</label>
                                 <div class="password-field">
                                     <input type="password" id="signUpPassword" class="form-control-reg"
-                                        placeholder="Minimum 6 characters" autocomplete="new-password" minlength="6"
-                                        required>
+                                        placeholder="Create a strong password" autocomplete="new-password"
+                                        minlength="9" aria-describedby="passwordRequirements" required>
                                     <button class="password-toggle" type="button" data-toggle-password="signUpPassword"
                                         aria-label="Show account password">Show</button>
                                 </div>
+                                <ul class="password-requirements" id="passwordRequirements">
+                                    <li data-password-rule="length">At least 9 characters</li>
+                                    <li data-password-rule="upper">One uppercase letter</li>
+                                    <li data-password-rule="lower">One lowercase letter</li>
+                                    <li data-password-rule="number">One number</li>
+                                    <li data-password-rule="special">One special character</li>
+                                </ul>
                             </div>
                             <button class="btn btn-primary-full" type="submit">Create Account</button>
+                            <button class="auth-secondary-action" id="resendSignupVerificationBtn" type="button">
+                                Send verification email
+                            </button>
+                        </form>
+
+                        <form id="resetPasswordForm" class="auth-form" hidden>
+                            <div class="form-group-reg">
+                                <label for="resetPassword">New Password</label>
+                                <div class="password-field">
+                                    <input type="password" id="resetPassword" class="form-control-reg"
+                                        placeholder="Create a strong new password" autocomplete="new-password"
+                                        minlength="9" aria-describedby="resetPasswordRequirements" required>
+                                    <button class="password-toggle" type="button" data-toggle-password="resetPassword"
+                                        aria-label="Show new password">Show</button>
+                                </div>
+                                <ul class="password-requirements" id="resetPasswordRequirements">
+                                    <li data-reset-password-rule="length">At least 9 characters</li>
+                                    <li data-reset-password-rule="upper">One uppercase letter</li>
+                                    <li data-reset-password-rule="lower">One lowercase letter</li>
+                                    <li data-reset-password-rule="number">One number</li>
+                                    <li data-reset-password-rule="special">One special character</li>
+                                </ul>
+                            </div>
+                            <div class="form-group-reg">
+                                <label for="resetPasswordConfirm">Confirm New Password</label>
+                                <div class="password-field">
+                                    <input type="password" id="resetPasswordConfirm" class="form-control-reg"
+                                        placeholder="Repeat the new password" autocomplete="new-password" required>
+                                    <button class="password-toggle" type="button"
+                                        data-toggle-password="resetPasswordConfirm"
+                                        aria-label="Show password confirmation">Show</button>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary-full" type="submit">Update Password</button>
                         </form>
 
                         <div class="message-area auth-message" id="authMessage"></div>
@@ -440,7 +486,6 @@
                                 </button>
                                 <canvas id="registerCanvas" style="display: none;"></canvas>
 
-                                <div class="debug-info">⚙ Debug info ▾</div>
                             </div>
                         </div>
 
@@ -508,7 +553,6 @@
                                 </button>
                             </div>
                         </div>
-                        <div class="debug-info">⚙ Debug info ▾</div>
                     </div>
                 </div>
 
@@ -648,210 +692,387 @@
 
             <!-- Admin Dashboard (hidden until login) -->
             <div id="adminDashboard" style="display: none;">
-                <div class="page-container" style="max-width: 1200px; margin: 0 auto;">
-
-                    <div class="admin-header-row"
-                        style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2.5rem;">
-                        <div>
-                            <h2 class="page-title" style="margin-bottom: 0.25rem;">Admin Dashboard</h2>
-                            <p style="color: hsl(var(--muted-foreground)); font-size: 0.95rem;">Manage voters,
-                                candidates, and election data</p>
+                <div class="admin-shell">
+                    <aside class="admin-side">
+                        <div class="admin-brand-lockup">
+                            <img src="https://bloody-red-edpnfdir4g.edgeone.dev/mmu.jpg" alt="" class="admin-brand-logo"
+                                onerror="this.style.display='none'">
+                            <div>
+                                <strong>MMU E-Voting</strong>
+                                <span>Admin Portal</span>
+                            </div>
                         </div>
-                        <button id="adminLogoutBtn" class="admin-logout-btn">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                                <polyline points="16 17 21 12 16 7" />
-                                <line x1="21" x2="9" y1="12" y2="12" />
-                            </svg>
-                            Logout
-                        </button>
-                    </div>
-
-                    <div class="admin-stats-four"
-                        style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2rem;">
-                        <div class="results-stat-card">
-                            <div class="stat-icon-wrapper"
-                                style="color: #4285f4; background: none; margin-bottom: 0.25rem; height: auto;">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
+                        <nav class="admin-side-nav" aria-label="Admin navigation">
+                            <button class="admin-tab active" data-admin-tab="voters" type="button">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                                    <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                                    <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                                    <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+                                </svg>
+                                Dashboard
+                            </button>
+                            <button class="admin-tab" data-admin-tab="candidates" type="button">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
                                     <circle cx="9" cy="7" r="4"></circle>
                                     <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                                 </svg>
-                            </div>
-                            <span class="results-value" id="adminRegistered"
-                                style="font-size:1.5rem; margin-bottom: 0;">0</span>
-                            <span class="results-label" style="font-size: 0.8rem;">Voters</span>
-                        </div>
-                        <div class="results-stat-card">
-                            <div class="stat-icon-wrapper"
-                                style="color: #4285f4; background: none; margin-bottom: 0.25rem; height: auto;">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
-                                    <line x1="9" y1="9" x2="15" y2="9"></line>
-                                    <line x1="9" y1="13" x2="15" y2="13"></line>
-                                    <line x1="9" y1="17" x2="11" y2="17"></line>
+                                Candidates
+                            </button>
+                            <button class="admin-tab" data-admin-tab="accounts" type="button">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
                                 </svg>
-                            </div>
-                            <span class="results-value" id="adminVotesFull"
-                                style="font-size:1.5rem; margin-bottom: 0;">0</span>
-                            <span class="results-label" style="font-size: 0.8rem;">Votes Cast</span>
-                        </div>
-                        <div class="results-stat-card">
-                            <div class="stat-icon-wrapper"
-                                style="color: #4285f4; background: none; margin-bottom: 0.25rem; height: auto;">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="9" cy="7" r="4"></circle>
-                                    <line x1="19" x2="19" y1="8" y2="14"></line>
-                                    <line x1="22" x2="16" y1="11" y2="11"></line>
+                                Users & Roles
+                            </button>
+                            <button class="admin-tab" data-admin-tab="addCandidate" type="button">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 5v14"></path>
+                                    <path d="M5 12h14"></path>
                                 </svg>
-                            </div>
-                            <span class="results-value" id="adminCandidates"
-                                style="font-size:1.5rem; margin-bottom: 0;">15</span>
-                            <span class="results-label" style="font-size: 0.8rem;">Candidates</span>
-                        </div>
-                        <div class="results-stat-card">
-                            <div class="stat-icon-wrapper"
-                                style="color: #4285f4; background: none; margin-bottom: 0.25rem; height: auto;">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <path d="M3 3v18h18"></path>
-                                    <rect width="4" height="7" x="7" y="10" rx="1"></rect>
-                                    <rect width="4" height="12" x="15" y="5" rx="1"></rect>
+                                Add Candidate
+                            </button>
+                        </nav>
+                        <div class="admin-integrity-card">
+                            <span class="admin-integrity-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                    <path d="m9 12 2 2 4-4"></path>
                                 </svg>
-                            </div>
-                            <span class="results-value" id="adminVotes"
-                                style="font-size:1.5rem; margin-bottom: 0;">0</span>
-                            <span class="results-label" style="font-size: 0.8rem;">Total Votes</span>
-                        </div>
-                    </div>
-
-                    <div class="admin-tabs-wrapper"
-                        style="background: #e9ecef; padding: 0.4rem; border-radius: 8px; display: inline-flex; width: 100%; margin-bottom: 1.5rem;">
-                        <button class="admin-tab active" data-admin-tab="voters"
-                            style="flex:1; padding:0.6rem 1rem; border:none; border-radius:6px; background:white; box-shadow:0 1px 3px rgba(0,0,0,0.1); font-weight:600; color:hsl(var(--foreground)); cursor:pointer; font-family:inherit;">Voters</button>
-                        <button class="admin-tab" data-admin-tab="candidates"
-                            style="flex:1; padding:0.6rem 1rem; border:none; border-radius:6px; background:transparent; font-weight:500; color:#6c757d; cursor:pointer; font-family:inherit;">Candidates</button>
-                        <button class="admin-tab" data-admin-tab="accounts"
-                            style="flex:1; padding:0.6rem 1rem; border:none; border-radius:6px; background:transparent; font-weight:500; color:#6c757d; cursor:pointer; font-family:inherit;">Accounts</button>
-                        <button class="admin-tab" data-admin-tab="addCandidate"
-                            style="flex:1; padding:0.6rem 1rem; border:none; border-radius:6px; background:transparent; font-weight:500; color:#6c757d; cursor:pointer; font-family:inherit;">Add
-                            Candidate</button>
-                    </div>
-
-                    <!-- Voters Tab -->
-                    <div id="adminTabVoters" class="admin-tab-content active-tab">
-                        <div class="admin-content-card"
-                            style="background: white; border-radius: 12px; padding: 2rem 2.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid hsl(var(--border)); min-height: 350px;">
-                            <div
-                                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-                                <h3 style="font-size:1.2rem; font-weight: 700; color:hsl(var(--foreground));">Registered
-                                    Voters</h3>
-                            </div>
-                            <div class="admin-table-wrapper">
-                                <table class="admin-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Name</th>
-                                            <th>Reg No.</th>
-                                            <th>Email</th>
-                                            <th>Phone</th>
-                                            <th>Status</th>
-                                            <th style="text-align:right;">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="adminVotersTable">
-                                        <tr>
-                                            <td colspan="6" style="text-align:center; color:#adb5bd; padding:3rem;">No
-                                                voters registered yet.</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                            </span>
+                            <div>
+                                <strong>System Integrity</strong>
+                                <span>Secure & Verified</span>
                             </div>
                         </div>
-                    </div>
+                        <button id="adminLogoutBtn" class="admin-side-logout" type="button">
+                            <span class="nav-profile-avatar">
+                                <span>AD</span>
+                            </span>
+                            <span>
+                                <strong>Admin User</strong>
+                                <small>Sign out</small>
+                            </span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                <polyline points="16 17 21 12 16 7"></polyline>
+                                <line x1="21" x2="9" y1="12" y2="12"></line>
+                            </svg>
+                        </button>
+                    </aside>
 
-                    <!-- Candidates Tab -->
-                    <div id="adminTabCandidates" class="admin-tab-content" style="display:none;">
-                        <div class="admin-content-card"
-                            style="background: white; border-radius: 12px; padding: 2rem 2.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid hsl(var(--border)); min-height: 350px;">
-                            <h3
-                                style="font-size:1.2rem; font-weight: 700; color:hsl(var(--foreground)); margin-bottom:1.5rem;">
-                                All Candidates</h3>
-                            <div id="adminCandidatesList"></div>
-                        </div>
-                    </div>
-
-                    <!-- Accounts Tab -->
-                    <div id="adminTabAccounts" class="admin-tab-content" style="display:none;">
-                        <div class="admin-content-card"
-                            style="background: white; border-radius: 12px; padding: 2rem 2.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid hsl(var(--border)); min-height: 350px;">
-                            <div
-                                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-                                <h3 style="font-size:1.2rem; font-weight: 700; color:hsl(var(--foreground));">Student
-                                    Accounts</h3>
+                    <section class="admin-main-panel">
+                        <header class="admin-topbar">
+                            <div>
+                                <h2>Admin Dashboard</h2>
+                                <p>Monitor elections, voters, and system integrity</p>
                             </div>
-                            <div class="admin-table-wrapper">
-                                <table class="admin-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Name</th>
-                                            <th>Email</th>
-                                            <th>Created</th>
-                                            <th>Last Updated</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="adminAccountsTable">
-                                        <tr>
-                                            <td colspan="4" style="text-align:center; color:#adb5bd; padding:3rem;">
-                                                No student accounts found.</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                            <div class="admin-topbar-actions">
+                                <span class="admin-clock" id="adminClock">Loading...</span>
+                                <button class="admin-icon-btn" type="button" aria-label="System help">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <path d="M9.09 9a3 3 0 0 1 5.82 1c0 2-3 2-3 4"></path>
+                                        <path d="M12 17h.01"></path>
+                                    </svg>
+                                </button>
                             </div>
-                        </div>
-                    </div>
+                        </header>
 
-                    <!-- Add Candidate Tab -->
-                    <div id="adminTabAddCandidate" class="admin-tab-content" style="display:none;">
-                        <div class="admin-content-card"
-                            style="background: white; border-radius: 12px; padding: 2rem 2.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid hsl(var(--border)); min-height: 350px; max-width:600px;">
-                            <h3
-                                style="font-size:1.2rem; font-weight: 700; color:hsl(var(--foreground)); margin-bottom:1.5rem;">
-                                Add New Candidate</h3>
-                            <form id="addCandidateForm" class="registration-form">
-                                <div class="form-group-reg">
-                                    <label for="newCandidateName">Candidate Name</label>
-                                    <input type="text" id="newCandidateName" class="form-control-reg"
-                                        placeholder="e.g. John Doe" required>
+                        <div class="admin-metrics-grid">
+                            <article class="admin-metric-card metric-blue">
+                                <div class="metric-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="9" cy="7" r="4"></circle>
+                                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                                    </svg>
                                 </div>
-                                <div class="form-group-reg">
-                                    <label for="newCandidatePosition">Position</label>
-                                    <select id="newCandidatePosition" class="form-control-reg" required>
-                                        <option value="">Select position...</option>
-                                    </select>
+                                <div>
+                                    <span>Total Voters</span>
+                                    <strong id="adminRegistered">0</strong>
+                                    <small>100% Registered</small>
                                 </div>
-                                <div class="form-group-reg">
-                                    <label for="newCandidateSlogan">Campaign Slogan</label>
-                                    <input type="text" id="newCandidateSlogan" class="form-control-reg"
-                                        placeholder="e.g. Unity in Progress">
+                            </article>
+                            <article class="admin-metric-card metric-green">
+                                <div class="metric-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M3 9h18v11H3z"></path>
+                                        <path d="m8 9 4-5 4 5"></path>
+                                        <path d="m9 15 2 2 4-4"></path>
+                                    </svg>
                                 </div>
-                                <button type="submit" class="btn-primary-full" style="margin-top:0.5rem;">Add
-                                    Candidate</button>
-                            </form>
-                            <div id="addCandidateMessage" class="message-area"
-                                style="text-align:center; padding:0.5rem 0;"></div>
+                                <div>
+                                    <span>Votes Cast</span>
+                                    <strong id="adminVotesFull">0</strong>
+                                    <small id="adminTurnoutLabel">0% Turnout</small>
+                                </div>
+                            </article>
+                            <article class="admin-metric-card metric-blue">
+                                <div class="metric-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <span>Integrity</span>
+                                    <strong>100%</strong>
+                                    <small>System Secure</small>
+                                </div>
+                            </article>
+                            <article class="admin-metric-card metric-purple">
+                                <div class="metric-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                        <path d="M9 15h6"></path>
+                                        <path d="M9 11h2"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <span>Preserved Report</span>
+                                    <strong id="preservedReportStatus">Not Preserved</strong>
+                                    <small id="preservedReportSubtext">Election Ongoing</small>
+                                </div>
+                            </article>
                         </div>
-                    </div>
 
-                    <div class="admin-actions" style="margin-top:2rem; text-align:right;">
-                        <button class="btn btn-danger" id="resetElectionBtn">Reset Election Data</button>
-                    </div>
+                        <div class="admin-dashboard-grid">
+                            <article class="admin-panel admin-lifecycle-panel">
+                                <div class="admin-panel-title">
+                                    <span class="title-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <path d="M12 6v6l4 2"></path>
+                                        </svg>
+                                    </span>
+                                    <h3>Election Lifecycle</h3>
+                                </div>
+                                <div class="lifecycle-body">
+                                    <div class="election-card-visual" aria-hidden="true">
+                                        <div class="calendar-top"></div>
+                                        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4">
+                                            <path d="M18 34 29 45 48 21"></path>
+                                            <rect x="15" y="28" width="34" height="24" rx="4"></rect>
+                                        </svg>
+                                    </div>
+                                    <div class="lifecycle-copy">
+                                        <h4 id="currentElectionName">Current Election</h4>
+                                        <span class="status-pill" id="currentElectionStatus">Active</span>
+                                        <p>Opened: <strong id="currentElectionOpened">-</strong></p>
+                                        <p>Closed: <strong id="currentElectionClosed">-</strong></p>
+                                    </div>
+                                    <div class="lifecycle-steps">
+                                        <div class="life-step done">
+                                            <span>✓</span>
+                                            <strong>Setup</strong>
+                                            <small>Completed</small>
+                                        </div>
+                                        <div class="life-step done">
+                                            <span>✓</span>
+                                            <strong>Opened</strong>
+                                            <small>Completed</small>
+                                        </div>
+                                        <div class="life-step active" id="lifecycleActiveStep">
+                                            <span></span>
+                                            <strong>Active</strong>
+                                            <small>In Progress</small>
+                                        </div>
+                                        <div class="life-step" id="lifecycleClosedStep">
+                                            <span></span>
+                                            <strong>Closed</strong>
+                                            <small>Pending</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="admin-actions lifecycle-actions">
+                                    <button class="admin-danger-action" id="resetElectionBtn" type="button">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="5" y="11" width="14" height="10" rx="2"></rect>
+                                            <path d="M8 11V7a4 4 0 0 1 8 0v4"></path>
+                                        </svg>
+                                        Close Election & Preserve Report
+                                    </button>
+                                    <button class="admin-outline-action" id="openNextElectionBtn" type="button">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="m5 12 14-7-7 14-2-7-5-0z"></path>
+                                        </svg>
+                                        Open Next Election
+                                    </button>
+                                </div>
+                            </article>
+
+                            <aside class="admin-panel candidates-summary">
+                                <div class="admin-panel-title">
+                                    <span class="title-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                            <circle cx="9" cy="7" r="4"></circle>
+                                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                        </svg>
+                                    </span>
+                                    <h3>Candidates</h3>
+                                    <button class="admin-link-button" data-admin-tab="candidates" type="button">View
+                                        All</button>
+                                </div>
+                                <strong class="candidate-total" id="adminCandidates">0</strong>
+                                <span class="candidate-total-label">Total Candidates</span>
+                                <div id="adminCandidateSummary" class="candidate-summary-list"></div>
+                                <button class="admin-outline-wide" data-admin-tab="candidates" type="button">Manage
+                                    Candidates</button>
+                            </aside>
+
+                            <article class="admin-panel voters-panel" id="adminTabVoters">
+                                <div class="admin-panel-title">
+                                    <span class="title-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                            <circle cx="9" cy="7" r="4"></circle>
+                                        </svg>
+                                    </span>
+                                    <h3>Registered Voters</h3>
+                                </div>
+                                <div class="admin-table-wrapper">
+                                    <table class="admin-table">
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Name</th>
+                                                <th>Reg. No.</th>
+                                                <th>Email</th>
+                                                <th>Status</th>
+                                                <th>Integrity</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="adminVotersTable">
+                                            <tr>
+                                                <td colspan="6">No voters registered yet.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="admin-table-footer">
+                                    <span id="adminVoterRange">Showing 0 voters</span>
+                                    <button class="admin-page-btn" type="button" aria-label="Previous page">‹</button>
+                                    <button class="admin-page-btn active" type="button">1</button>
+                                    <button class="admin-page-btn" type="button" aria-label="Next page">›</button>
+                                </div>
+                            </article>
+
+                            <aside class="admin-panel audit-panel">
+                                <div class="admin-panel-title">
+                                    <span class="title-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                            <path d="m9 12 2 2 4-4"></path>
+                                        </svg>
+                                    </span>
+                                    <h3>Immutable Audit & Reports</h3>
+                                </div>
+                                <p>All records are locked, preserved, and tamper-evident.</p>
+                                <button class="audit-row" type="button" data-admin-tab="voters">
+                                    <span>View Audit Log</span>
+                                    <small>Voter and election integrity trail</small>
+                                </button>
+                                <button class="audit-row" type="button" data-admin-tab="candidates">
+                                    <span>Verify Integrity</span>
+                                    <small>Locked candidates and voter records</small>
+                                </button>
+                                <button class="audit-row" type="button" id="auditReportSummary">
+                                    <span>Preserved Reports</span>
+                                    <small>View preserved election reports</small>
+                                    <b id="preservedReportsBadge">None</b>
+                                </button>
+                                <div id="preservedReportsList" class="report-history-list">
+                                    <p class="report-history-empty">No preserved reports yet.</p>
+                                </div>
+                                <button class="admin-export-btn" type="button" id="exportPreservedReportBtn" disabled>
+                                    Download Latest Report
+                                </button>
+                            </aside>
+
+                            <article class="admin-panel admin-tab-content admin-full-panel report-viewer-panel"
+                                id="adminReportViewer" style="display:none;">
+                                <div class="admin-panel-title report-viewer-titlebar">
+                                    <div>
+                                        <h3 id="selectedReportTitle">Preserved Election Report</h3>
+                                        <p id="selectedReportMeta" class="report-viewer-meta">Select a report to view.
+                                        </p>
+                                    </div>
+                                    <button class="admin-link-button" type="button" id="reportViewerCloseBtn">
+                                        Back to Dashboard
+                                    </button>
+                                </div>
+                                <div id="selectedReportBody" class="report-viewer-body"></div>
+                                <div class="report-viewer-actions">
+                                    <button class="admin-outline-wide" type="button" id="selectedReportDownloadBtn">
+                                        Download PDF
+                                    </button>
+                                </div>
+                            </article>
+
+                            <article class="admin-panel admin-tab-content admin-full-panel" id="adminTabCandidates"
+                                style="display:none;">
+                                <div class="admin-panel-title">
+                                    <h3>All Candidates</h3>
+                                </div>
+                                <div id="adminCandidatesList"></div>
+                            </article>
+
+                            <article class="admin-panel admin-tab-content admin-full-panel" id="adminTabAccounts"
+                                style="display:none;">
+                                <div class="admin-panel-title">
+                                    <h3>Student Accounts</h3>
+                                </div>
+                                <div class="admin-table-wrapper">
+                                    <table class="admin-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Email</th>
+                                                <th>Created</th>
+                                                <th>Last Updated</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="adminAccountsTable">
+                                            <tr>
+                                                <td colspan="4">No student accounts found.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </article>
+
+                            <article class="admin-panel admin-tab-content admin-full-panel" id="adminTabAddCandidate"
+                                style="display:none;">
+                                <div class="admin-panel-title">
+                                    <h3>Add New Candidate</h3>
+                                </div>
+                                <form id="addCandidateForm" class="registration-form admin-candidate-form">
+                                    <div class="form-group-reg">
+                                        <label for="newCandidateName">Candidate Name</label>
+                                        <input type="text" id="newCandidateName" class="form-control-reg"
+                                            placeholder="e.g. John Doe" required>
+                                    </div>
+                                    <div class="form-group-reg">
+                                        <label for="newCandidatePosition">Position</label>
+                                        <select id="newCandidatePosition" class="form-control-reg" required>
+                                            <option value="">Select position...</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group-reg">
+                                        <label for="newCandidateSlogan">Campaign Slogan</label>
+                                        <input type="text" id="newCandidateSlogan" class="form-control-reg"
+                                            placeholder="e.g. Unity in Progress">
+                                    </div>
+                                    <button type="submit" class="btn-primary-full">Add Candidate</button>
+                                </form>
+                                <div id="addCandidateMessage" class="message-area"></div>
+                            </article>
+                        </div>
+                    </section>
                 </div>
             </div>
         </div>

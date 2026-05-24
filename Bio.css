@@ -508,6 +508,12 @@ body {
     display: none;
 }
 
+.auth-inline-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: -0.45rem;
+}
+
 .auth-message {
     text-align: center;
     padding: 0.75rem 0 0;
@@ -515,7 +521,7 @@ body {
 }
 
 .auth-secondary-action {
-    width: 100%;
+    width: auto;
     border: none;
     background: transparent;
     color: hsl(var(--primary));
@@ -524,6 +530,10 @@ body {
     font-size: 0.9rem;
     font-weight: 700;
     padding: 0.2rem 0;
+}
+
+.auth-form>.auth-secondary-action {
+    align-self: center;
 }
 
 .auth-secondary-action:hover,
@@ -1034,6 +1044,40 @@ body {
     outline: none;
 }
 
+.password-requirements {
+    list-style: none;
+    display: grid;
+    gap: 0.35rem;
+    margin: 0.25rem 0 0;
+    padding: 0;
+}
+
+.password-requirements li {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: #6c757d;
+    font-size: 0.78rem;
+    font-weight: 650;
+}
+
+.password-requirements li::before {
+    content: "";
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    background: #cbd5e1;
+    flex: 0 0 auto;
+}
+
+.password-requirements li.is-valid {
+    color: hsl(var(--success));
+}
+
+.password-requirements li.is-valid::before {
+    background: hsl(var(--success));
+}
+
 .face-scan-box {
     border: 1px dashed #ced4da;
     border-radius: 8px;
@@ -1152,15 +1196,6 @@ body {
 
 .btn-primary-full:hover:not(:disabled) {
     background: hsl(215 65% 40%);
-}
-
-.debug-info {
-    position: absolute;
-    bottom: 0.75rem;
-    left: 1rem;
-    font-size: 0.75rem;
-    color: #adb5bd;
-    cursor: pointer;
 }
 
 /* Registered Voters */
@@ -1928,6 +1963,1053 @@ body {
 .admin-refresh-btn:hover {
     color: #2b5cbe;
     border-color: #2b5cbe;
+}
+
+/* High fidelity admin dashboard */
+#adminPage {
+    background: #f4f7fb !important;
+    padding: 0 !important;
+}
+
+.admin-shell {
+    display: grid;
+    grid-template-columns: 250px minmax(0, 1fr);
+    min-height: calc(100vh - 74px);
+    background: #f4f7fb;
+}
+
+.admin-side {
+    background: linear-gradient(180deg, #053889 0%, #003076 54%, #00275f 100%);
+    color: #fff;
+    padding: 1.4rem 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.35rem;
+    position: sticky;
+    top: 74px;
+    min-height: calc(100vh - 74px);
+    box-shadow: 12px 0 30px rgba(8, 47, 116, 0.08);
+}
+
+.admin-brand-lockup {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0 0.45rem 0.8rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.admin-brand-logo {
+    width: 46px;
+    height: 46px;
+    object-fit: contain;
+    background: #fff;
+    border-radius: 6px;
+    padding: 0.25rem;
+}
+
+.admin-brand-lockup strong,
+.admin-side-logout strong {
+    display: block;
+    font-size: 0.96rem;
+    line-height: 1.2;
+}
+
+.admin-brand-lockup span,
+.admin-side-logout small,
+.admin-integrity-card span {
+    display: block;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.78rem;
+    margin-top: 0.15rem;
+}
+
+.admin-side-nav {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.admin-side-nav .admin-tab,
+.admin-side-logout {
+    width: 100%;
+    min-height: 44px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.86);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem 0.75rem;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 650;
+    text-align: left;
+    cursor: pointer;
+}
+
+.admin-side-nav .admin-tab svg,
+.admin-side-logout svg,
+.admin-panel-title svg,
+.admin-metric-card svg,
+.integrity-lock svg,
+.admin-danger-action svg,
+.admin-outline-action svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+}
+
+.admin-side-nav .admin-tab:hover,
+.admin-side-nav .admin-tab.active {
+    background: linear-gradient(135deg, #1b75d8, #155bb2);
+    color: #fff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 10px 22px rgba(0, 0, 0, 0.16);
+}
+
+.admin-integrity-card {
+    margin-top: auto;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 8px;
+    padding: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.admin-integrity-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    color: #16a34a;
+    background: #dff7e8;
+}
+
+.admin-integrity-icon svg {
+    width: 21px;
+    height: 21px;
+}
+
+.admin-side-logout {
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 0;
+    padding-top: 1rem;
+}
+
+.admin-side-logout .nav-profile-avatar {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    background: #fff;
+    color: #18315e;
+}
+
+.admin-side-logout>span:nth-child(2) {
+    min-width: 0;
+    flex: 1;
+}
+
+.admin-main-panel {
+    min-width: 0;
+    padding: 1.4rem 1.7rem 2rem;
+}
+
+.admin-topbar {
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid #e3e8f0;
+    border-radius: 8px;
+    padding: 1.05rem 1.3rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.05);
+}
+
+.admin-topbar h2 {
+    color: #08275c;
+    font-size: 1.55rem;
+    font-weight: 800;
+    margin: 0 0 0.25rem;
+}
+
+.admin-topbar p {
+    color: #56627a;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.admin-topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    color: #46536b;
+}
+
+.admin-clock {
+    font-size: 0.86rem;
+    white-space: nowrap;
+}
+
+.admin-icon-btn,
+.admin-page-btn {
+    border: 1px solid #dfe6f1;
+    background: #fff;
+    color: #42526d;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.admin-icon-btn {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+}
+
+.admin-icon-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.admin-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.admin-metric-card,
+.admin-panel {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+}
+
+.admin-metric-card {
+    min-height: 116px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.05rem;
+}
+
+.metric-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    background: #eef5ff;
+    color: #0b62dc;
+}
+
+.metric-green .metric-icon {
+    background: #e8f7eb;
+    color: #198b3b;
+}
+
+.metric-purple .metric-icon {
+    background: #f1edff;
+    color: #6350cf;
+}
+
+.admin-metric-card span,
+.candidate-total-label {
+    display: block;
+    color: #4f5d75;
+    font-size: 0.86rem;
+    margin-bottom: 0.25rem;
+}
+
+.admin-metric-card strong {
+    display: block;
+    color: #07142e;
+    font-size: 1.55rem;
+    line-height: 1.15;
+}
+
+.admin-metric-card small {
+    display: block;
+    color: #087a2f;
+    font-size: 0.78rem;
+    margin-top: 0.45rem;
+}
+
+#preservedReportStatus {
+    color: #d1132a;
+    font-size: 1.08rem;
+}
+
+#preservedReportStatus.preserved {
+    color: #087a2f;
+}
+
+.admin-dashboard-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 365px;
+    gap: 1rem;
+    align-items: start;
+}
+
+.admin-panel {
+    padding: 1rem;
+    min-width: 0;
+}
+
+.admin-panel-title {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin-bottom: 0.9rem;
+}
+
+.admin-panel-title h3 {
+    color: #0f1830;
+    font-size: 1.03rem;
+    font-weight: 800;
+    margin: 0;
+    flex: 1;
+}
+
+.title-icon {
+    width: 24px;
+    height: 24px;
+    color: #0057d8;
+    display: grid;
+    place-items: center;
+}
+
+.admin-lifecycle-panel,
+.voters-panel {
+    grid-column: 1;
+}
+
+.candidates-summary,
+.audit-panel {
+    grid-column: 2;
+}
+
+.lifecycle-body {
+    display: grid;
+    grid-template-columns: 120px 250px minmax(280px, 1fr);
+    gap: 1.2rem;
+    align-items: center;
+    border-top: 1px solid #e5eaf2;
+    border-bottom: 1px solid #e5eaf2;
+    padding: 1.15rem 0;
+}
+
+.election-card-visual {
+    width: 96px;
+    height: 100px;
+    border: 4px solid #bdd2ef;
+    border-radius: 12px;
+    color: #5c8bcc;
+    background: #f7fbff;
+    position: relative;
+    overflow: hidden;
+    display: grid;
+    place-items: end center;
+    padding-bottom: 0.65rem;
+}
+
+.calendar-top {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 22px;
+    background: #1765de;
+}
+
+.election-card-visual svg {
+    width: 58px;
+    height: 58px;
+}
+
+.lifecycle-copy h4 {
+    color: #07142e;
+    font-size: 1.35rem;
+    margin: 0 0 0.45rem;
+}
+
+.lifecycle-copy p {
+    color: #4f5d75;
+    margin: 0.45rem 0;
+    font-size: 0.86rem;
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+    background: #dcfce7;
+    color: #087a2f;
+    font-size: 0.82rem;
+    font-weight: 750;
+}
+
+.status-pill.closed {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.lifecycle-steps {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.55rem;
+    position: relative;
+}
+
+.lifecycle-steps::before {
+    content: "";
+    position: absolute;
+    left: 12%;
+    right: 12%;
+    top: 16px;
+    height: 2px;
+    background: #cbd8ec;
+}
+
+.life-step {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    justify-items: center;
+    text-align: center;
+    gap: 0.2rem;
+    color: #5f6c83;
+}
+
+.life-step span {
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    border: 5px solid #9aa5b5;
+    background: #fff;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-weight: 800;
+}
+
+.life-step.done span,
+.life-step.active span {
+    border-color: #1565d8;
+    background: #1565d8;
+}
+
+.life-step.active span {
+    border-color: #129052;
+    background: #fff;
+}
+
+.life-step strong {
+    color: #0f1830;
+    font-size: 0.78rem;
+}
+
+.life-step small {
+    font-size: 0.72rem;
+    line-height: 1.25;
+}
+
+.lifecycle-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.admin-danger-action,
+.admin-outline-action,
+.admin-outline-wide,
+.admin-export-btn {
+    min-height: 42px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-weight: 800;
+    cursor: pointer;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.admin-danger-action {
+    background: #d8122d;
+    border: 1px solid #c40f28;
+    color: #fff;
+}
+
+.admin-outline-action,
+.admin-outline-wide {
+    background: #fff;
+    border: 1px solid #0b62dc;
+    color: #0057d8;
+}
+
+.admin-danger-action:disabled,
+.admin-outline-action:disabled,
+.admin-outline-wide:disabled,
+.admin-export-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.admin-link-button {
+    border: 0;
+    background: transparent;
+    color: #0057d8;
+    font-weight: 750;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.candidate-total {
+    display: block;
+    color: #0757c8;
+    font-size: 1.6rem;
+    line-height: 1;
+}
+
+.candidate-summary-list {
+    margin: 1rem 0;
+    border-top: 1px solid #e5eaf2;
+}
+
+.candidate-summary-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.72rem 0;
+    border-bottom: 1px solid #e5eaf2;
+    color: #26344d;
+    font-size: 0.86rem;
+}
+
+.candidate-summary-empty {
+    color: #7b8798;
+    margin: 1rem 0;
+    font-size: 0.88rem;
+}
+
+.admin-outline-wide,
+.admin-export-btn {
+    width: 100%;
+}
+
+.audit-panel p {
+    color: #4f5d75;
+    font-size: 0.9rem;
+    margin: 0 0 0.75rem;
+}
+
+.audit-row {
+    width: 100%;
+    min-height: 58px;
+    border: 1px solid #e1e7f0;
+    background: #fff;
+    border-radius: 7px;
+    padding: 0.65rem 0.8rem;
+    margin-bottom: 0.55rem;
+    text-align: left;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.15rem 0.75rem;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.audit-row span {
+    color: #0057d8;
+    font-weight: 800;
+}
+
+.audit-row small {
+    color: #5f6c83;
+}
+
+.audit-row b {
+    grid-row: 1 / span 2;
+    align-self: center;
+    background: #e7ecf3;
+    color: #42526d;
+    padding: 0.25rem 0.55rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+}
+
+.admin-export-btn {
+    background: #d7dce4;
+    border: 1px solid #cbd3df;
+    color: #7b8798;
+    margin-top: 0.65rem;
+}
+
+.admin-export-btn:not(:disabled) {
+    background: #082f6f;
+    border-color: #082f6f;
+    color: #fff;
+}
+
+.voters-panel {
+    padding-bottom: 0.8rem;
+}
+
+.admin-table-wrapper {
+    border: 1px solid #e5eaf2;
+    border-radius: 8px;
+    overflow: auto;
+}
+
+.admin-table {
+    min-width: 760px;
+}
+
+.admin-table thead tr {
+    background: #fbfcfe;
+}
+
+.admin-table th {
+    color: #27334b;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.78rem;
+    border-bottom: 1px solid #e5eaf2;
+}
+
+.admin-table td {
+    font-size: 0.82rem;
+    color: #17223a;
+}
+
+.integrity-lock {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: #0057d8;
+    background: #eaf2ff;
+    border-radius: 6px;
+    padding: 0.3rem 0.65rem;
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.integrity-lock svg {
+    width: 13px;
+    height: 13px;
+}
+
+.admin-table-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.45rem;
+    padding-top: 0.8rem;
+    color: #5f6c83;
+    font-size: 0.82rem;
+}
+
+.admin-table-footer span {
+    margin-right: auto;
+}
+
+.admin-page-btn {
+    min-width: 32px;
+    height: 32px;
+}
+
+.admin-page-btn.active {
+    background: #0057d8;
+    color: #fff;
+    border-color: #0057d8;
+}
+
+.admin-full-panel {
+    grid-column: 1 / -1;
+}
+
+.admin-candidate-form {
+    max-width: 680px;
+}
+
+/* Professional operations refinements */
+.admin-side {
+    background: #062b63;
+}
+
+.admin-side-nav .admin-tab:hover,
+.admin-side-nav .admin-tab.active {
+    background: #114c9c;
+    box-shadow: none;
+}
+
+.admin-metric-card,
+.admin-panel,
+.admin-topbar {
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.metric-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+}
+
+.admin-metric-card {
+    min-height: 96px;
+}
+
+.election-card-visual {
+    display: none;
+}
+
+.lifecycle-body {
+    grid-template-columns: 280px minmax(320px, 1fr);
+}
+
+.candidate-group {
+    margin-bottom: 1.2rem;
+}
+
+.candidate-group h4 {
+    color: #10264f;
+    font-weight: 800;
+    margin-bottom: 0.65rem;
+}
+
+.candidate-admin-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.candidate-admin-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.85rem;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid #e4eaf3;
+    border-radius: 7px;
+    background: #fff;
+    flex: 1 1 260px;
+    min-width: 250px;
+    max-width: 360px;
+}
+
+.candidate-admin-main {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.candidate-admin-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: #eef3f9;
+    color: #4c5f7a;
+    display: grid;
+    place-items: center;
+}
+
+.candidate-admin-name {
+    font-weight: 750;
+    color: #17223a;
+    font-size: 0.9rem;
+}
+
+.candidate-admin-motto {
+    color: #69758a;
+    font-size: 0.78rem;
+    margin-top: 0.1rem;
+}
+
+.candidate-remove-btn {
+    min-height: 34px;
+    padding: 0 0.8rem;
+    border: 1px solid #dc2626;
+    border-radius: 6px;
+    background: #fff;
+    color: #b91c1c;
+    font-weight: 750;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.candidate-remove-btn:hover:not(:disabled) {
+    background: #fef2f2;
+}
+
+.candidate-remove-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    border-color: #cbd5e1;
+    color: #64748b;
+}
+
+.report-history-list {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0.65rem 0;
+}
+
+.report-history-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    border: 1px solid #e4eaf3;
+    border-radius: 7px;
+    padding: 0.65rem 0.75rem;
+    background: #fbfcfe;
+}
+
+.report-history-row strong,
+.report-history-row span {
+    display: block;
+}
+
+.report-history-row strong {
+    color: #17223a;
+    font-size: 0.86rem;
+}
+
+.report-history-row span,
+.report-history-empty {
+    color: #667085;
+    font-size: 0.76rem;
+}
+
+.report-history-empty {
+    margin: 0.5rem 0;
+}
+
+.report-history-row button {
+    border: 1px solid #0b62dc;
+    color: #0057d8;
+    background: #fff;
+    border-radius: 6px;
+    min-height: 30px;
+    padding: 0 0.7rem;
+    font-weight: 750;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.report-history-actions {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.report-viewer-panel {
+    min-height: 420px;
+}
+
+.report-viewer-titlebar {
+    align-items: flex-start;
+    border-bottom: 1px solid #e5eaf2;
+    padding-bottom: 0.9rem;
+}
+
+.report-viewer-titlebar>div {
+    flex: 1;
+}
+
+.report-viewer-meta {
+    color: #667085;
+    font-size: 0.84rem;
+    margin: 0.25rem 0 0;
+}
+
+.report-viewer-body {
+    display: grid;
+    gap: 1rem;
+}
+
+.report-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 0.25rem;
+}
+
+.report-summary-grid div {
+    border: 1px solid #e4eaf3;
+    background: #fbfcfe;
+    border-radius: 7px;
+    padding: 0.85rem;
+}
+
+.report-summary-grid span {
+    display: block;
+    color: #667085;
+    font-size: 0.76rem;
+    margin-bottom: 0.25rem;
+}
+
+.report-summary-grid strong {
+    color: #111827;
+    font-size: 1rem;
+}
+
+.report-section h4 {
+    color: #10264f;
+    font-size: 0.98rem;
+    font-weight: 800;
+    margin: 0 0 0.55rem;
+}
+
+.report-table {
+    min-width: 620px;
+}
+
+.report-viewer-actions {
+    border-top: 1px solid #e5eaf2;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    max-width: 260px;
+}
+
+@media (max-width: 1180px) {
+    .admin-metrics-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .admin-dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-lifecycle-panel,
+    .voters-panel,
+    .candidates-summary,
+    .audit-panel {
+        grid-column: 1;
+    }
+
+    .lifecycle-body {
+        grid-template-columns: 100px minmax(180px, 1fr);
+    }
+
+    .lifecycle-steps {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 860px) {
+    .admin-shell {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-side {
+        position: relative;
+        top: auto;
+        min-height: auto;
+        padding: 1rem;
+    }
+
+    .admin-side-nav {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .admin-integrity-card,
+    .admin-side-logout {
+        display: none;
+    }
+
+    .admin-main-panel {
+        padding: 1rem;
+    }
+
+    .admin-topbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .admin-clock {
+        white-space: normal;
+    }
+
+    .report-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 620px) {
+    .admin-metrics-grid,
+    .lifecycle-actions,
+    .admin-side-nav {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-metric-card {
+        min-height: auto;
+    }
+
+    .lifecycle-body {
+        grid-template-columns: 1fr;
+    }
+
+    .election-card-visual {
+        width: 84px;
+        height: 88px;
+    }
+
+    .lifecycle-steps {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        row-gap: 1rem;
+    }
+
+    .lifecycle-steps::before {
+        display: none;
+    }
+
+    .admin-table-footer {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .admin-table-footer span {
+        width: 100%;
+    }
+
+    .report-history-row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .report-history-actions,
+    .report-history-actions button,
+    .report-viewer-actions {
+        width: 100%;
+    }
+
+    .candidate-admin-list {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .candidate-admin-row {
+        max-width: none;
+        min-width: 0;
+    }
+
+    .report-summary-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* Responsive Design */
