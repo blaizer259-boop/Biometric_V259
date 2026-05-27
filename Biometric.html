@@ -92,7 +92,6 @@
                 <button class="account-menu-close" id="accountMenuClose" type="button" aria-label="Close account menu">
                     &times;
                 </button>
-                <p class="account-menu-email" id="accountMenuEmail">student@students.mmu.ac.ke</p>
                 <div class="account-menu-avatar" id="accountMenuAvatar">
                     <img id="accountMenuPhoto" alt="" hidden>
                     <span id="accountMenuInitials">AC</span>
@@ -107,7 +106,10 @@
                             <path d="M19 8v6" />
                             <path d="M22 11h-6" />
                         </svg>
-                        Manage Profile
+                        <span class="account-action-text">
+                            <strong>Manage Profile</strong>
+                            <small id="accountMenuEmail">student@students.mmu.ac.ke</small>
+                        </span>
                     </button>
                     <button class="account-action-btn" id="authLogoutBtn" type="button">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -300,18 +302,18 @@
                     <div class="auth-card" aria-labelledby="authTitle">
                         <div class="auth-card-header">
                             <p class="auth-eyebrow">MMU E-Voting</p>
-                            <h2 id="authTitle">Welcome back</h2>
-                            <p id="authSubtitle">Sign in to continue to the secure election portal.</p>
+                            <h2 id="authTitle">Create your account</h2>
+                            <p id="authSubtitle">Set up secure access before using the election portal.</p>
                         </div>
 
                         <div class="auth-tabs" role="tablist" aria-label="Authentication mode">
-                            <button class="auth-tab active" id="showSignInBtn" type="button"
-                                data-auth-mode="signin">Sign In</button>
-                            <button class="auth-tab" id="showSignUpBtn" type="button" data-auth-mode="signup">Create
+                            <button class="auth-tab active" id="showSignUpBtn" type="button" data-auth-mode="signup">Create
                                 Account</button>
+                            <button class="auth-tab" id="showSignInBtn" type="button"
+                                data-auth-mode="signin">Sign In</button>
                         </div>
 
-                        <form id="signInForm" class="auth-form">
+                        <form id="signInForm" class="auth-form" hidden>
                             <div class="form-group-reg">
                                 <label for="signInEmail">Email Address</label>
                                 <input type="email" id="signInEmail" class="form-control-reg"
@@ -333,11 +335,11 @@
                             </div>
                             <button class="btn btn-primary-full" type="submit">Sign In</button>
                             <button class="auth-secondary-action" id="resendConfirmationBtn" type="button">
-                                Resend confirmation email
+                                Resend account verification email
                             </button>
                         </form>
 
-                        <form id="signUpForm" class="auth-form" hidden>
+                        <form id="signUpForm" class="auth-form">
                             <div class="form-row-2">
                                 <div class="form-group-reg">
                                     <label for="signUpFirstName">First Name</label>
@@ -412,6 +414,85 @@
                         <div class="message-area auth-message" id="authMessage"></div>
                     </div>
                 </section>
+            </div>
+        </div>
+
+        <!-- Profile Page -->
+        <div id="profilePage" class="page profile-page">
+            <div class="page-container profile-page-container">
+                <header class="profile-heading">
+                    <div>
+                        <h2>Profile</h2>
+                        <p id="profileDisplayEmail">-</p>
+                    </div>
+                    <span class="profile-status-badge" id="profileStatusBadge">Signed in</span>
+                </header>
+
+                <div class="profile-layout">
+                    <aside class="profile-summary-panel">
+                        <div class="profile-identity">
+                            <div class="profile-avatar-large" id="profileAvatarInitials">AC</div>
+                            <div>
+                                <h3 id="profileDisplayName">Account</h3>
+                                <p id="profileSummaryEmail">-</p>
+                            </div>
+                        </div>
+
+                        <dl class="profile-detail-list profile-detail-list-compact">
+                            <div>
+                                <dt>Account ID</dt>
+                                <dd id="profileAccountId">-</dd>
+                            </div>
+                            <div>
+                                <dt>Email</dt>
+                                <dd id="profileVerified">-</dd>
+                            </div>
+                            <div>
+                                <dt>Created</dt>
+                                <dd id="profileCreated">-</dd>
+                            </div>
+                            <div>
+                                <dt>Last sign in</dt>
+                                <dd id="profileLastSignIn">-</dd>
+                            </div>
+                        </dl>
+
+                        <button class="btn btn-outline-dark btn-block" id="profilePasswordResetBtn" type="button">
+                            Send Password Reset Email
+                        </button>
+                    </aside>
+
+                    <div class="profile-main">
+                        <section class="profile-panel">
+                            <div class="profile-panel-header">
+                                <h3>Personal Details</h3>
+                            </div>
+
+                        <form id="profileForm" class="profile-form">
+                            <div class="form-row-2">
+                                <div class="form-group-reg">
+                                    <label for="profileFirstName">First Name</label>
+                                    <input type="text" id="profileFirstName" class="form-control-reg"
+                                        autocomplete="given-name">
+                                </div>
+                                <div class="form-group-reg">
+                                    <label for="profileLastName">Last Name</label>
+                                    <input type="text" id="profileLastName" class="form-control-reg"
+                                        autocomplete="family-name">
+                                </div>
+                            </div>
+
+                            <div class="form-group-reg">
+                                <label for="profileEmail">Email Address</label>
+                                <input type="email" id="profileEmail" class="form-control-reg" readonly>
+                            </div>
+
+                            <button class="btn btn-primary-full" type="submit">Save Profile</button>
+                            <div class="message-area auth-message" id="profileMessage"></div>
+                        </form>
+                        </section>
+                    </div>
+                </div>
             </div>
         </div>
 

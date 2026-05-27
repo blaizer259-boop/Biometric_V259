@@ -363,14 +363,6 @@ body {
     cursor: pointer;
 }
 
-.account-menu-email {
-    padding: 0 2.25rem;
-    color: hsl(var(--foreground));
-    font-size: 0.92rem;
-    font-weight: 500;
-    overflow-wrap: anywhere;
-}
-
 .account-menu-avatar {
     width: 5rem;
     height: 5rem;
@@ -431,6 +423,30 @@ body {
 
 .account-manage-btn {
     color: hsl(var(--primary));
+}
+
+.account-action-text {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.12rem;
+    line-height: 1.2;
+}
+
+.account-action-text strong {
+    font-size: 0.9rem;
+    font-weight: 800;
+}
+
+.account-action-text small {
+    max-width: 10.5rem;
+    color: hsl(var(--muted-foreground));
+    font-size: 0.72rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .account-action-btn:hover,
@@ -967,6 +983,172 @@ body {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+}
+
+.profile-page {
+    background: #f6f8fb;
+    padding-top: 2rem;
+    padding-bottom: 4rem;
+}
+
+.profile-page-container {
+    max-width: 1120px;
+}
+
+.profile-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.profile-heading h2 {
+    margin: 0 0 0.2rem;
+    font-size: 1.7rem;
+    font-weight: 800;
+}
+
+.profile-heading p {
+    margin: 0;
+    color: hsl(var(--muted-foreground));
+    font-size: 0.92rem;
+}
+
+.profile-layout {
+    display: grid;
+    grid-template-columns: 19rem minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+}
+
+.profile-summary-panel,
+.profile-panel {
+    background: #fff;
+    border: 1px solid hsl(var(--border));
+    border-radius: 8px;
+    box-shadow: var(--card-shadow);
+}
+
+.profile-summary-panel {
+    padding: 1.25rem;
+    position: sticky;
+    top: 5.5rem;
+}
+
+.profile-main {
+    display: grid;
+    gap: 1rem;
+    max-width: 44rem;
+}
+
+.profile-identity {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid hsl(var(--border));
+}
+
+.profile-avatar-large {
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 50%;
+    background: hsl(var(--primary));
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 800;
+    flex: 0 0 auto;
+}
+
+.profile-identity h3 {
+    margin: 0 0 0.15rem;
+    font-size: 1rem;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+}
+
+.profile-identity p {
+    margin: 0;
+    color: hsl(var(--muted-foreground));
+    font-size: 0.84rem;
+    overflow-wrap: anywhere;
+}
+
+.profile-panel-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: center;
+    min-height: 3.5rem;
+    padding: 0 1.25rem;
+    border-bottom: 1px solid hsl(var(--border));
+    margin-bottom: 0;
+}
+
+.profile-panel-header h3 {
+    font-size: 0.98rem;
+    font-weight: 800;
+    margin: 0;
+}
+
+.profile-status-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2rem;
+    padding: 0 0.8rem;
+    border-radius: 999px;
+    background: #e0ebfc;
+    color: hsl(var(--primary));
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding: 1.25rem;
+}
+
+.profile-detail-list {
+    display: grid;
+    gap: 0;
+    margin: 0 0 1.25rem;
+}
+
+.profile-detail-list div {
+    padding: 0.85rem 0;
+    border-bottom: 1px solid hsl(var(--border));
+}
+
+.profile-detail-list div:first-child {
+    padding-top: 0;
+}
+
+.profile-detail-list div:last-child {
+    border-bottom: 0;
+}
+
+.profile-detail-list dt {
+    display: block;
+    color: hsl(var(--muted-foreground));
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin-bottom: 0.2rem;
+}
+
+.profile-detail-list dd {
+    display: block;
+    margin: 0;
+    color: hsl(var(--foreground));
+    font-size: 0.94rem;
+    font-weight: 800;
+    overflow-wrap: anywhere;
 }
 
 .form-row-2 {
@@ -3388,9 +3570,23 @@ body {
     .registration-card,
     .register-panel,
     .admin-login-card,
+    .profile-summary-panel,
     .auth-intro-panel,
     .auth-card {
         padding: 1.5rem;
+    }
+
+    .profile-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-summary-panel {
+        position: static;
+    }
+
+    .profile-heading {
+        align-items: flex-start;
+        flex-direction: column;
     }
 
     .position-card-vote {
@@ -3471,6 +3667,7 @@ body {
 
     .registration-card,
     .admin-login-card,
+    .profile-summary-panel,
     .auth-intro-panel,
     .auth-card {
         padding: 1.25rem;

@@ -51,7 +51,7 @@
     const FACE_SAMPLE_DELAY_MS = 220;
     const MIN_FACE_HEIGHT_RATIO = 0.22;
     const MAX_FACE_HEIGHT_RATIO = 0.48;
-    const PROTECTED_PAGES = new Set(['register', 'vote']);
+    const PROTECTED_PAGES = new Set(['register', 'vote', 'results', 'profile']);
     const VOTER_LIST_COLUMNS = 'id,name,reg_number,email,phone,auth_user_id,has_voted,election_id,created_at';
     const VOTER_FACE_COLUMNS = 'id,name,reg_number,face_hash,has_voted,election_id';
     const CANDIDATE_COLUMNS = 'id,name,position,motto,image_url,election_id,created_at';
@@ -62,6 +62,7 @@
     const pages = {
         home: document.getElementById('homePage'),
         auth: document.getElementById('authPage'),
+        profile: document.getElementById('profilePage'),
         register: document.getElementById('registerPage'),
         vote: document.getElementById('votePage'),
         results: document.getElementById('resultsPage'),
@@ -172,6 +173,21 @@
     const resetPassword = document.getElementById('resetPassword');
     const resetPasswordConfirm = document.getElementById('resetPasswordConfirm');
     const authMessage = document.getElementById('authMessage');
+    const profileForm = document.getElementById('profileForm');
+    const profileFirstName = document.getElementById('profileFirstName');
+    const profileLastName = document.getElementById('profileLastName');
+    const profileEmail = document.getElementById('profileEmail');
+    const profileAccountId = document.getElementById('profileAccountId');
+    const profileCreated = document.getElementById('profileCreated');
+    const profileLastSignIn = document.getElementById('profileLastSignIn');
+    const profileVerified = document.getElementById('profileVerified');
+    const profileStatusBadge = document.getElementById('profileStatusBadge');
+    const profileAvatarInitials = document.getElementById('profileAvatarInitials');
+    const profileDisplayName = document.getElementById('profileDisplayName');
+    const profileDisplayEmail = document.getElementById('profileDisplayEmail');
+    const profileSummaryEmail = document.getElementById('profileSummaryEmail');
+    const profileMessage = document.getElementById('profileMessage');
+    const profilePasswordResetBtn = document.getElementById('profilePasswordResetBtn');
 
     // Home Buttons
     const homeRegisterBtn = document.getElementById('homeRegisterBtn');
@@ -182,6 +198,7 @@
     let currentPage = 'home';
     let currentAuthSession = null;
     let currentAuthUser = null;
+    let currentUserProfile = null;
     let isPasswordRecoveryMode = false;
     let currentElection = null;
     let electionHistory = [];
@@ -189,14 +206,29 @@
     let removingCandidateIds = new Set();
     let activeVoteRows = [];
     let electionCyclesAvailable = false;
+    let isLoggingOut = false;
 
     // ---------- Helper Functions ----------
+    function getAuthGateMessage(pageName) {
+        const actions = {
+            register: 'register as a voter',
+            vote: 'vote',
+            results: 'view live results',
+            profile: 'manage your profile'
+        };
+        return `Please sign in or create an account to ${actions[pageName] || 'continue'}.`;
+    }
+
+    function getDefaultAuthMode(options = {}) {
+        return options.authMode || 'signup';
+    }
+
     function showPage(pageName, options = {}) {
         if (PROTECTED_PAGES.has(pageName) && !isAuthenticated() && !options.skipAuthGate) {
             pendingAuthPage = pageName;
-            switchAuthMode('signin');
-            showPage('auth', { skipAuthGate: true });
-            showMessage(authMessage, 'Please sign in or create an account to continue.', true);
+            switchAuthMode('signup');
+            showPage('auth', { skipAuthGate: true, authMode: 'signup' });
+            showMessage(authMessage, getAuthGateMessage(pageName), true);
             return;
         }
 
@@ -215,10 +247,14 @@
 
         window.scrollTo(0, 0); // Always scroll to top on page change
 
-        if (pageName === 'auth' && !isPasswordRecoveryMode) switchAuthMode('signin');
+        if (pageName === 'auth' && !isPasswordRecoveryMode) switchAuthMode(getDefaultAuthMode(options));
         if (pageName === 'register') {
             prefillAuthenticatedVoter();
             warmFaceModels();
+        }
+        if (pageName === 'profile') {
+            renderProfilePage();
+            loadCurrentUserProfileFromSupabase();
         }
         if (pageName === 'vote') warmFaceModels();
         if (pageName === 'results') updateResultsDisplay();
@@ -252,7 +288,7 @@
         }
 
         if (code === 'over_email_send_rate_limit' || /rate limit/i.test(message)) {
-            return 'Supabase is temporarily limiting confirmation emails. Wait a few minutes, then try again.';
+            return 'Supabase is temporarily limiting email sends. Wait a few minutes, then try again. Also check your inbox and spam folder in case the email already arrived.';
         }
 
         if (/password/i.test(message) && /weak|short|characters/i.test(message)) {
@@ -264,6 +300,11 @@
         }
 
         return message || fallback;
+    }
+
+    function isAlreadyRegisteredError(error) {
+        const message = error?.message || '';
+        return /already registered|already exists|user already/i.test(message);
     }
 
     function isEmailNotConfirmedError(error) {
@@ -620,7 +661,7 @@
             authSubtitle.textContent = isReset
                 ? 'Choose a strong password before returning to the election portal.'
                 : isSignUp
-                    ? 'Set up secure access before registering or voting.'
+                    ? 'Set up secure access before using the election portal.'
                     : 'Sign in to continue to the secure election portal.';
         }
         if (authMessage) authMessage.textContent = '';
@@ -657,6 +698,10 @@
         if (accountMenuGreeting) {
             accountMenuGreeting.textContent = `Hi, ${metadata.firstName || metadata.emailName || 'Student'}!`;
         }
+
+        if (currentPage === 'profile') {
+            renderProfilePage();
+        }
     }
 
     function prefillAuthenticatedVoter() {
@@ -668,43 +713,213 @@
         if (voterEmail && !voterEmail.value) voterEmail.value = metadata.email || '';
     }
 
+    function findCurrentUserVoter() {
+        if (!currentAuthUser) return null;
+        const metadata = getAuthMetadata();
+        const userEmail = normalizeEmail(metadata.email);
+
+        return voters.find(voter => {
+            const voterEmail = normalizeEmail(voter.email);
+            return voter.auth_user_id === currentAuthUser.id || (userEmail && voterEmail === userEmail);
+        }) || null;
+    }
+
+    function renderProfilePage() {
+        if (!currentAuthUser) return;
+
+        const authMetadata = getAuthMetadata();
+        const profileFirst = currentUserProfile?.first_name || authMetadata.firstName;
+        const profileLast = currentUserProfile?.last_name || authMetadata.lastName;
+        const profileFullName = `${profileFirst || ''} ${profileLast || ''}`.trim() || authMetadata.fullName;
+        const metadata = {
+            ...authMetadata,
+            firstName: profileFirst,
+            lastName: profileLast,
+            fullName: profileFullName,
+            email: currentUserProfile?.email || authMetadata.email
+        };
+        const initials = getProfileInitials(metadata);
+        const isVerified = Boolean(currentAuthUser.email_confirmed_at || currentAuthUser.confirmed_at);
+
+        if (profileAvatarInitials) profileAvatarInitials.textContent = initials;
+        if (profileDisplayName) profileDisplayName.textContent = metadata.fullName;
+        if (profileDisplayEmail) profileDisplayEmail.textContent = metadata.email || 'No email address found';
+        if (profileSummaryEmail) profileSummaryEmail.textContent = metadata.email || 'No email address found';
+        if (profileFirstName) profileFirstName.value = metadata.firstName || '';
+        if (profileLastName) profileLastName.value = metadata.lastName || '';
+        if (profileEmail) profileEmail.value = metadata.email || '';
+        if (profileAccountId) profileAccountId.textContent = currentAuthUser.id || '-';
+        if (profileCreated) profileCreated.textContent = formatDateTime(currentAuthUser.created_at);
+        if (profileLastSignIn) profileLastSignIn.textContent = formatDateTime(currentAuthUser.last_sign_in_at);
+        if (profileVerified) profileVerified.textContent = isVerified ? 'Verified' : 'Not verified';
+        if (profileStatusBadge) profileStatusBadge.textContent = isVerified ? 'Verified account' : 'Needs verification';
+
+    }
+
+    async function loadCurrentUserProfileFromSupabase() {
+        if (!currentAuthUser) return;
+
+        try {
+            const { data, error } = await supabase
+                .from('user_profiles')
+                .select('id,email,first_name,last_name,created_at,updated_at')
+                .eq('id', currentAuthUser.id)
+                .maybeSingle();
+
+            if (error) throw error;
+
+            if (data) {
+                currentUserProfile = data;
+                renderProfilePage();
+                return;
+            }
+
+            await syncUserProfile(currentAuthUser);
+            renderProfilePage();
+        } catch (error) {
+            console.warn('Could not load profile from Supabase:', error);
+            showMessage(profileMessage, 'Could not load saved profile details from Supabase.', true);
+        }
+    }
+
+    async function saveProfileDetails(event) {
+        event.preventDefault();
+        if (!currentAuthUser) return;
+
+        const firstName = profileFirstName?.value.trim() || '';
+        const lastName = profileLastName?.value.trim() || '';
+        const fullName = `${firstName} ${lastName}`.trim() || getAuthMetadata().emailName || 'Account';
+        const submitButton = profileForm?.querySelector('button[type="submit"]');
+        const originalText = submitButton?.textContent || '';
+
+        if (!firstName || !lastName) {
+            showMessage(profileMessage, 'Enter both first name and last name.', true);
+            return;
+        }
+
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.textContent = 'Saving...';
+        }
+
+        const profileRecord = {
+            id: currentAuthUser.id,
+            email: currentAuthUser.email || profileEmail?.value || '',
+            first_name: firstName,
+            last_name: lastName,
+            updated_at: new Date().toISOString()
+        };
+
+        const { error: profileError } = await supabase
+            .from('user_profiles')
+            .upsert(profileRecord, { onConflict: 'id' });
+
+        if (profileError) {
+            console.error('Profile save failed:', profileError);
+            showMessage(profileMessage, `Could not save profile to Supabase: ${profileError.message}`, true);
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = originalText;
+            }
+            return;
+        }
+
+        currentUserProfile = {
+            ...(currentUserProfile || {}),
+            ...profileRecord
+        };
+
+        const { data, error } = await supabase.auth.updateUser({
+            data: {
+                first_name: firstName,
+                last_name: lastName,
+                full_name: fullName
+            }
+        });
+
+        if (error) {
+            console.warn('Profile saved to Supabase, but Auth metadata update failed:', error);
+        }
+
+        currentAuthUser = data?.user || {
+            ...currentAuthUser,
+            user_metadata: {
+                ...(currentAuthUser.user_metadata || {}),
+                first_name: firstName,
+                last_name: lastName,
+                full_name: fullName
+            }
+        };
+        currentAuthSession = currentAuthSession ? { ...currentAuthSession, user: currentAuthUser } : { user: currentAuthUser };
+        await loadCurrentUserProfileFromSupabase();
+        updateAuthUI();
+        renderProfilePage();
+        showMessage(profileMessage, error
+            ? 'Profile saved to Supabase. Auth display name will update after your next sign in.'
+            : 'Profile updated successfully.');
+
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = originalText;
+        }
+    }
+
     async function syncUserProfile(user = currentAuthUser) {
         if (!user) return;
 
         const metadata = getAuthMetadata(user);
+        const profileRecord = {
+            id: user.id,
+            email: metadata.email,
+            first_name: metadata.firstName,
+            last_name: metadata.lastName,
+            updated_at: new Date().toISOString()
+        };
+
         const { error } = await supabase
             .from('user_profiles')
-            .upsert({
-                id: user.id,
-                email: metadata.email,
-                first_name: metadata.firstName,
-                last_name: metadata.lastName,
-                updated_at: new Date().toISOString()
-            }, { onConflict: 'id' });
+            .upsert(profileRecord, { onConflict: 'id' });
 
         if (error) {
             console.warn('Could not sync user profile. Make sure migration 005_auth_user_profiles.sql is applied.', error);
+            return;
         }
+
+        currentUserProfile = {
+            ...(currentUserProfile || {}),
+            ...profileRecord
+        };
     }
 
     async function logoutUser() {
-        const { error } = await supabase.auth.signOut();
-        if (error) {
-            alert('Logout failed: ' + error.message);
-            return false;
+        if (isLoggingOut) return true;
+        isLoggingOut = true;
+
+        if (authLogoutBtn) {
+            authLogoutBtn.disabled = true;
+            authLogoutBtn.setAttribute('aria-busy', 'true');
         }
 
         currentAuthSession = null;
         currentAuthUser = null;
+        currentUserProfile = null;
         closeAccountMenu();
         updateAuthUI();
 
-        if (PROTECTED_PAGES.has(currentPage)) {
+        if (PROTECTED_PAGES.has(currentPage) || currentPage === 'admin') {
             showPage('home');
-        } else if (currentPage === 'admin') {
-            updateAdminDisplay();
         }
 
+        const { error } = await supabase.auth.signOut({ scope: 'local' });
+        if (error) {
+            console.warn('Local logout completed, but Supabase sign-out returned an error:', error);
+        }
+
+        isLoggingOut = false;
+        if (authLogoutBtn) {
+            authLogoutBtn.disabled = false;
+            authLogoutBtn.removeAttribute('aria-busy');
+        }
         return true;
     }
 
@@ -2398,10 +2613,7 @@
 
             if (error) {
                 if (isEmailNotConfirmedError(error)) {
-                    const resendError = await sendSignupVerificationEmail(email);
-                    showMessage(authMessage, resendError
-                        ? `${readableAuthError(error)} Also, verification email resend failed: ${readableAuthError(resendError, 'Could not resend verification email.')}`
-                        : 'Your email is not verified yet. A fresh verification email has been sent. Open it, then sign in again.', Boolean(resendError));
+                    showMessage(authMessage, 'Your email is not verified yet. Check your inbox and spam folder for the original verification email, or use "Resend account verification email" after waiting a few minutes.', true);
                 } else {
                     showMessage(authMessage, readableAuthError(error, 'Sign in failed. Please try again.'), true);
                 }
@@ -2462,6 +2674,10 @@
             });
 
             if (error) {
+                if (isAlreadyRegisteredError(error)) {
+                    switchAuthMode('signin');
+                    if (signInEmail) signInEmail.value = email;
+                }
                 showMessage(authMessage, readableAuthError(error, 'Account creation failed. Please try again.'), true);
                 submitButton.disabled = false;
                 submitButton.textContent = originalText;
@@ -2469,10 +2685,7 @@
             }
 
             if (!data.session) {
-                const resendError = await sendSignupVerificationEmail(email);
-                showMessage(authMessage, resendError
-                    ? `Account created, but the verification email could not be resent: ${readableAuthError(resendError, 'Email delivery failed.')} Try the "Send verification email" button in a few minutes.`
-                    : `Account created. A verification email has been sent. The link should return to ${getAuthRedirectUrl()}.`);
+                showMessage(authMessage, `Account created. Supabase will send a confirmation link if email delivery is configured. Check your inbox and spam folder, then sign in.`);
                 switchAuthMode('signin');
                 if (signInEmail) signInEmail.value = email;
                 signUpForm.reset();
@@ -2486,7 +2699,7 @@
             await syncUserProfile(currentAuthUser);
             updateAuthUI();
             signUpForm.reset();
-            showMessage(authMessage, `Account created for ${firstName}.`);
+            showMessage(authMessage, `Account created for ${firstName}. You are signed in.`);
 
             const destination = pendingAuthPage || 'register';
             pendingAuthPage = 'home';
@@ -2527,7 +2740,7 @@
         if (error) {
             showMessage(authMessage, readableAuthError(error, 'Could not send verification email.'), true);
         } else {
-            showMessage(authMessage, `Verification email sent. The link should return to ${getAuthRedirectUrl()}.`);
+            showMessage(authMessage, `Verification email requested. If the account exists and Supabase email delivery is configured, a confirmation link will arrive. Check inbox and spam.`);
         }
 
         button.disabled = false;
@@ -2565,7 +2778,7 @@
         if (error) {
             showMessage(authMessage, readableAuthError(error, 'Could not send the password reset email.'), true);
         } else {
-            showMessage(authMessage, `Password reset email sent. The link should return to ${getAuthRedirectUrl()}.`);
+            showMessage(authMessage, `Password reset requested. If an account exists for this email and Supabase email delivery is configured, a reset link will arrive. Check inbox and spam.`);
         }
 
         button.disabled = false;
@@ -2652,8 +2865,16 @@
     if (accountProfileBtn) {
         accountProfileBtn.addEventListener('click', () => {
             closeAccountMenu();
-            showPage('register');
+            showPage('profile');
         });
+    }
+
+    if (profileForm) {
+        profileForm.addEventListener('submit', saveProfileDetails);
+    }
+
+    if (profilePasswordResetBtn) {
+        profilePasswordResetBtn.addEventListener('click', () => sendPasswordReset(profileEmail, profilePasswordResetBtn));
     }
 
     document.querySelectorAll('[data-toggle-password]').forEach(button => {
@@ -2926,6 +3147,7 @@
         supabase.auth.onAuthStateChange(async (event, session) => {
             currentAuthSession = session;
             currentAuthUser = session?.user || null;
+            if (!currentAuthUser) currentUserProfile = null;
             updateAuthUI();
 
             if (event === 'PASSWORD_RECOVERY') {
