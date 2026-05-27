@@ -5,9 +5,15 @@ Browser-based facial registration and login using face-api.js and Supabase.
 Voters page:
 
 ```text
-[http://127.0.0.1:5173/Biometric.html
-](https://blaizer259-boop.github.io/Biometric_V259/Biometric.html)```
 
+(https://blaizer259-boop.github.io/Biometric_V259/Biometric.html
+
+## Setup
+
+1. Install dependencies:
+
+   ```bash
+   npm install
 ## Setup
 
 1. Install dependencies:
