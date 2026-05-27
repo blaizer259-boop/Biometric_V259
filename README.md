@@ -2,6 +2,12 @@
 
 Browser-based facial registration and login using face-api.js and Supabase.
 
+Live website:
+
+```text
+https://blaizer259-boop.github.io/Biometric_V259/Biometric.html
+```
+
 Voters page:
 
 ```text
